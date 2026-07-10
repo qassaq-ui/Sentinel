@@ -1,27 +1,63 @@
 <script setup lang="ts">
-import { Button } from '@/components/ui/button';
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '@/components/ui/table';
 import { useTranslations } from '@/composables/useTranslations';
-import { create as inquiriesCreate } from '@/routes/inquiries';
-import type { Auth } from '@/types/auth';
-import { Head, Link, usePage } from '@inertiajs/vue3';
-import { FileText } from '@lucide/vue';
-import { computed, ref } from 'vue';
+import { Head } from '@inertiajs/vue3';
+import { computed, onBeforeUnmount, ref, watch } from 'vue';
+import InquiryFilters from './Inquiries/InquiryFilters.vue';
+import InquirySearchBar from './Inquiries/InquirySearchBar.vue';
+import InquiryTabs from './Inquiries/InquiryTabs.vue';
+import InquiriesTable from './Inquiries/InquiriesTable.vue';
+import type {
+    InquiryCategory,
+    InquiryRecord,
+    InquiryTab,
+    ScrollInquiries,
+} from './Inquiries/types';
+
+type Props = {
+    categories: InquiryCategory[];
+    allInquiries: ScrollInquiries;
+    anonymousInquiries: ScrollInquiries;
+    archivedInquiries: ScrollInquiries;
+};
+
+const props = defineProps<Props>();
 
 const { t } = useTranslations();
-const page = usePage<{ auth: Auth }>();
-const can = computed(() => page.props.auth.can);
-
-type InquiryTab = 'all' | 'anonymous' | 'archived';
 
 const activeTab = ref<InquiryTab>('all');
+const search = ref('');
+const ageFilter = ref('all');
+const statusFilter = ref('all');
+const categoryFilter = ref('all');
+const submittedDateFilter = ref('');
+const sortFilter = ref('newest');
+const filtersVisible = ref(false);
+const isTabLoading = ref(true);
+let tabLoadingTimer: ReturnType<typeof window.setTimeout> | null = null;
+
+const activeScrollData = computed(() => {
+    if (activeTab.value === 'anonymous') {
+        return 'anonymousInquiries';
+    }
+
+    if (activeTab.value === 'archived') {
+        return 'archivedInquiries';
+    }
+
+    return 'allInquiries';
+});
+
+const activeInquiries = computed(() => props[activeScrollData.value].data);
+
+const filteredInquiries = computed(() => {
+    let rows = activeInquiries.value.filter((inquiry) => searchMatches(inquiry));
+    rows = rows.filter((inquiry) => statusMatches(inquiry));
+    rows = rows.filter((inquiry) => categoryMatches(inquiry));
+    rows = rows.filter((inquiry) => submittedDateMatches(inquiry));
+    rows = sortRows(rows);
+
+    return rows;
+});
 
 const emptyMessage = computed(() => {
     return {
@@ -31,13 +67,87 @@ const emptyMessage = computed(() => {
     }[activeTab.value];
 });
 
-const tabIndicatorClass = computed(() => {
-    return {
-        all: 'translate-x-0',
-        anonymous: 'translate-x-full',
-        archived: 'translate-x-[200%]',
-    }[activeTab.value];
-});
+function searchMatches(inquiry: InquiryRecord) {
+    const query = search.value.trim().toLowerCase();
+
+    if (query === '') {
+        return true;
+    }
+
+    return [
+        inquiry.number,
+        inquiry.subject,
+        inquiry.status,
+        inquiry.categoryName,
+        inquiry.submittedAt,
+    ].some((value) => value.toLowerCase().includes(query));
+}
+
+function statusMatches(inquiry: InquiryRecord) {
+    return statusFilter.value === 'all' || inquiry.status === statusFilter.value;
+}
+
+function categoryMatches(inquiry: InquiryRecord) {
+    if (categoryFilter.value === 'all') {
+        return true;
+    }
+
+    return inquiry.categoryId !== null && String(inquiry.categoryId) === categoryFilter.value;
+}
+
+function submittedDateMatches(inquiry: InquiryRecord) {
+    return submittedDateFilter.value === '' || inquiry.submittedDate === submittedDateFilter.value;
+}
+
+function sortRows(rows: InquiryRecord[]) {
+    const sortedRows = [...rows];
+
+    if (ageFilter.value === 'old' || sortFilter.value === 'oldest') {
+        return sortedRows.sort((a, b) => a.id - b.id);
+    }
+
+    if (sortFilter.value === 'days') {
+        return sortedRows.sort((a, b) => a.daysLeft - b.daysLeft);
+    }
+
+    return sortedRows;
+}
+
+function clearFilters() {
+    search.value = '';
+    ageFilter.value = 'all';
+    statusFilter.value = 'all';
+    categoryFilter.value = 'all';
+    submittedDateFilter.value = '';
+    sortFilter.value = 'newest';
+}
+
+function toggleFilters() {
+    filtersVisible.value = !filtersVisible.value;
+}
+
+function clearTabLoadingTimer() {
+    if (tabLoadingTimer === null) {
+        return;
+    }
+
+    window.clearTimeout(tabLoadingTimer);
+    tabLoadingTimer = null;
+}
+
+function showTabSkeleton() {
+    clearTabLoadingTimer();
+    isTabLoading.value = true;
+
+    tabLoadingTimer = window.setTimeout(() => {
+        isTabLoading.value = false;
+        tabLoadingTimer = null;
+    }, 900);
+}
+
+watch(activeTab, showTabSkeleton, { immediate: true });
+
+onBeforeUnmount(clearTabLoadingTimer);
 </script>
 
 <template>
@@ -46,151 +156,47 @@ const tabIndicatorClass = computed(() => {
 
         <div class="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden p-4">
             <div class="flex shrink-0 flex-col gap-4">
-                <div class="flex items-center justify-between gap-4">
-                    <h1 class="text-lg font-semibold">{{ t('Inquiries') }}</h1>
-                    <Button
-                        v-if="can.inquiriesCreate"
-                        as-child
-                        variant="link"
-                        class="h-auto px-0 py-0 font-semibold text-[var(--color-tab)] hover:text-[var(--color-tab)]"
-                    >
-                        <Link :href="inquiriesCreate()">
-                            {{ t('+ New inquiry') }}
-                        </Link>
-                    </Button>
-                </div>
+                <h1 class="text-lg font-semibold">{{ t('Inquiries') }}</h1>
 
-                <div
-                    class="relative grid h-10 w-full max-w-md grid-cols-3 rounded-lg bg-muted p-1"
-                    role="tablist"
-                    aria-label="Inquiries tabs"
+                <InquiryTabs
+                    v-model:active-tab="activeTab"
+                    :count="filteredInquiries.length"
+                    :filters-visible="filtersVisible"
+                    @toggle-filters="toggleFilters"
+                />
+
+                <InquirySearchBar v-model="search" @clear="clearFilters" />
+
+                <Transition
+                    enter-active-class="transition duration-200 ease-out"
+                    enter-from-class="-translate-y-2 opacity-0"
+                    enter-to-class="translate-y-0 opacity-100"
+                    leave-active-class="transition duration-150 ease-in"
+                    leave-from-class="translate-y-0 opacity-100"
+                    leave-to-class="-translate-y-2 opacity-0"
                 >
-                    <span
-                        class="pointer-events-none absolute inset-y-1 left-1 w-[calc((100%_-_0.5rem)/3)] rounded-md bg-[var(--color-tab)] shadow-sm transition-transform duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)]"
-                        :class="tabIndicatorClass"
+                    <InquiryFilters
+                        v-if="filtersVisible"
+                        v-model:age="ageFilter"
+                        v-model:status="statusFilter"
+                        v-model:category="categoryFilter"
+                        :categories="props.categories"
+                        v-model:submitted-date="submittedDateFilter"
+                        v-model:sort="sortFilter"
                     />
-
-                    <button
-                        type="button"
-                        role="tab"
-                        :aria-selected="activeTab === 'all'"
-                        class="relative z-10 inline-flex items-center justify-center rounded-md px-3 text-sm font-medium transition-colors duration-200"
-                        :class="
-                            activeTab === 'all'
-                                ? 'text-white'
-                                : 'text-muted-foreground'
-                        "
-                        @click="activeTab = 'all'"
-                    >
-                        {{ t('All') }}
-                    </button>
-
-                    <button
-                        type="button"
-                        role="tab"
-                        :aria-selected="activeTab === 'anonymous'"
-                        class="relative z-10 inline-flex items-center justify-center rounded-md px-3 text-sm font-medium transition-colors duration-200"
-                        :class="
-                            activeTab === 'anonymous'
-                                ? 'text-white'
-                                : 'text-muted-foreground'
-                        "
-                        @click="activeTab = 'anonymous'"
-                    >
-                        {{ t('Anonymous') }}
-                    </button>
-
-                    <button
-                        type="button"
-                        role="tab"
-                        :aria-selected="activeTab === 'archived'"
-                        class="relative z-10 inline-flex items-center justify-center rounded-md px-3 text-sm font-medium transition-colors duration-200"
-                        :class="
-                            activeTab === 'archived'
-                                ? 'text-white'
-                                : 'text-muted-foreground'
-                        "
-                        @click="activeTab = 'archived'"
-                    >
-                        {{ t('Archived') }}
-                    </button>
-                </div>
+                </Transition>
             </div>
 
             <div class="flex min-h-0 flex-1 flex-col overflow-hidden">
-                <Transition name="rubber-tab" mode="out-in">
-                    <div :key="activeTab" class="min-h-0 flex-1 overflow-hidden">
-                        <div class="flex h-full min-h-0 flex-1 pr-1">
-                            <div
-                                class="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-border bg-background"
-                            >
-                                <div class="relative min-h-0 flex-1 overflow-auto">
-                                    <Table class="w-full table-fixed">
-                                        <TableHeader class="sticky top-0 z-10 bg-background">
-                                            <TableRow>
-                                                <TableHead class="w-[42%]">
-                                                    {{ t('Subject') }}
-                                                </TableHead>
-                                                <TableHead class="w-[18%]">
-                                                    {{ t('Status') }}
-                                                </TableHead>
-                                                <TableHead class="w-[18%]">
-                                                    {{ t('Created at') }}
-                                                </TableHead>
-                                                <TableHead class="w-[22%] text-right">
-                                                    {{ t('Actions') }}
-                                                </TableHead>
-                                            </TableRow>
-                                        </TableHeader>
-
-                                        <TableBody>
-                                            <TableRow>
-                                                <TableCell
-                                                    :colspan="4"
-                                                    class="h-56 overflow-hidden text-center"
-                                                >
-                                                    <div
-                                                        class="flex h-full flex-col items-center justify-center gap-4"
-                                                    >
-                                                        <FileText
-                                                            class="size-32 text-muted-foreground opacity-[0.08]"
-                                                            :stroke-width="1.25"
-                                                        />
-                                                        <div
-                                                            class="text-sm font-medium text-muted-foreground"
-                                                        >
-                                                            {{ emptyMessage }}
-                                                        </div>
-                                                    </div>
-                                                </TableCell>
-                                            </TableRow>
-                                        </TableBody>
-                                    </Table>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </Transition>
+                <div class="flex h-full min-h-0 flex-1 pr-1">
+                    <InquiriesTable
+                        :scroll-data="activeScrollData"
+                        :inquiries="filteredInquiries"
+                        :empty-label="emptyMessage"
+                        :loading="isTabLoading"
+                    />
+                </div>
             </div>
         </div>
     </div>
 </template>
-
-<style scoped>
-.rubber-tab-enter-active,
-.rubber-tab-leave-active {
-    transition:
-        opacity 180ms ease,
-        transform 280ms cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-.rubber-tab-enter-from {
-    opacity: 0;
-    transform: translateY(6px) scale(0.985);
-}
-
-.rubber-tab-leave-to {
-    opacity: 0;
-    transform: translateY(-4px) scale(0.99);
-}
-</style>

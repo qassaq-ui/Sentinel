@@ -35,4 +35,10 @@ return [
         ],
     ],
 
+    'ai_assistant' => [
+        'base_url' => env('AI_ASSISTANT_BASE_URL', 'http://127.0.0.1:1337/v1'),
+        'model' => env('AI_ASSISTANT_MODEL', 'janhq/Jan-code-4b-Q4_K_M'),
+        'timeout' => env('AI_ASSISTANT_TIMEOUT', 120),
+    ],
+
 ];

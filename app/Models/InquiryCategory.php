@@ -5,6 +5,7 @@ namespace App\Models;
 use Database\Factories\InquiryCategoryFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 
 class InquiryCategory extends Model
@@ -41,5 +42,10 @@ class InquiryCategory extends Model
             $category->name_key ??= "inquiry_categories.{$uuid}.name";
             $category->description_key ??= "inquiry_categories.{$uuid}.description";
         });
+    }
+
+    public function inquiries(): HasMany
+    {
+        return $this->hasMany(Inquiry::class);
     }
 }

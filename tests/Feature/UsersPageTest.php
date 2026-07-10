@@ -1,8 +1,9 @@
 <?php
 
 use App\Models\User;
-use Illuminate\Support\Facades\Hash;
+use Database\Seeders\SpecialistSeeder;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Hash;
 use Inertia\Testing\AssertableInertia as Assert;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
@@ -51,6 +52,32 @@ test('authenticated users can visit the users page', function () {
                 return $roles->pluck('id')->contains($role->id);
             })
         );
+});
+
+test('database seeder creates system specialists for inquiry assignment', function () {
+    $this->seed(SpecialistSeeder::class);
+
+    $legal = User::query()->where('email', 'legal@speakup.test')->firstOrFail();
+    $hr = User::query()->where('email', 'hr@speakup.test')->firstOrFail();
+    $security = User::query()->where('email', 'economic.security@speakup.test')->firstOrFail();
+
+    expect($legal->type)->toBe('system')
+        ->and($legal->status)->toBe('active')
+        ->and($legal->hasRole('legal_counsel'))->toBeTrue()
+        ->and($hr->hasRole('hr_specialist'))->toBeTrue()
+        ->and($security->hasRole('economic_security_specialist'))->toBeTrue()
+        ->and(User::query()->whereIn('email', [
+            'legal@speakup.test',
+            'hr@speakup.test',
+            'compliance@speakup.test',
+            'ethics@speakup.test',
+            'security.investigations@speakup.test',
+            'physical.security@speakup.test',
+            'information.security@speakup.test',
+            'economic.security@speakup.test',
+            'safety@speakup.test',
+            'procurement.control@speakup.test',
+        ])->count())->toBe(10);
 });
 
 test('users page loads the first page of users for infinite scroll', function () {

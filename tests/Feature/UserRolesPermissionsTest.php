@@ -3,11 +3,11 @@
 use App\Models\User;
 use Illuminate\Contracts\Http\Kernel;
 use Inertia\Testing\AssertableInertia as Assert;
-use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
 use Spatie\Permission\Middleware\PermissionMiddleware;
 use Spatie\Permission\Middleware\RoleMiddleware;
 use Spatie\Permission\Middleware\RoleOrPermissionMiddleware;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
 
 test('users can receive roles with permissions', function () {
     $user = User::factory()->create();
@@ -21,8 +21,8 @@ test('users can receive roles with permissions', function () {
         ->and($user->can('manage roles'))->toBeTrue();
 });
 
-test('shared auth data includes the users view permission flag', function () {
-    collect(['users.view', 'users.create', 'users.update', 'users.delete'])
+test('shared auth data includes permission flags', function () {
+    collect(['settings.access', 'users.view', 'users.create', 'users.update', 'users.delete'])
         ->each(fn (string $permission): Permission => Permission::findOrCreate($permission));
 
     $user = User::factory()->create();
@@ -32,19 +32,21 @@ test('shared auth data includes the users view permission flag', function () {
         ->get(route('dashboard'))
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
+            ->where('auth.can.settingsAccess', false)
             ->where('auth.can.usersView', false)
             ->where('auth.can.usersCreate', false)
             ->where('auth.can.usersUpdate', false)
             ->where('auth.can.usersDelete', false)
         );
 
-    $user->givePermissionTo(['users.view', 'users.create', 'users.update', 'users.delete']);
+    $user->givePermissionTo(['settings.access', 'users.view', 'users.create', 'users.update', 'users.delete']);
 
     $this
         ->actingAs($user)
         ->get(route('dashboard'))
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
+            ->where('auth.can.settingsAccess', true)
             ->where('auth.can.usersView', true)
             ->where('auth.can.usersCreate', true)
             ->where('auth.can.usersUpdate', true)

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AIAssistantController;
 use App\Http\Controllers\DictionariesController;
 use App\Http\Controllers\InquiriesController;
 use App\Http\Controllers\LocalizationController;
@@ -12,6 +13,8 @@ Route::post('locale', [LocalizationController::class, 'update'])->name('locale.u
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::inertia('dashboard', 'Dashboard')->name('dashboard');
+    Route::post('ai-assistant/chat', [AIAssistantController::class, 'chat'])
+        ->name('ai-assistant.chat');
     Route::get('dictionaries', [DictionariesController::class, 'index'])
         ->middleware('permission:dictionaries.view')
         ->name('dictionaries.index');
@@ -33,6 +36,18 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('inquiries/create', [InquiriesController::class, 'create'])
         ->middleware('permission:inquiries.create')
         ->name('inquiries.create');
+    Route::patch('inquiries/{inquiry:number}/assignee', [InquiriesController::class, 'updateAssignee'])
+        ->middleware('permission:inquiries.update')
+        ->name('inquiries.assignee.update');
+    Route::patch('inquiries/{inquiry:number}/category', [InquiriesController::class, 'updateCategory'])
+        ->middleware('permission:inquiries.update')
+        ->name('inquiries.category.update');
+    Route::get('inquiries/{inquiry:number}', [InquiriesController::class, 'show'])
+        ->middleware('permission:inquiries.view')
+        ->name('inquiries.show');
+    Route::post('inquiries/{inquiry:number}/translate', [InquiriesController::class, 'translate'])
+        ->middleware('permission:inquiries.view')
+        ->name('inquiries.translate');
     Route::get('users', [UsersController::class, 'index'])
         ->middleware('permission:users.view')
         ->name('users.index');

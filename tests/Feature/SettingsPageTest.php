@@ -8,6 +8,7 @@ use Spatie\Permission\Models\Role;
 function userWithRolesPermissions(array $permissions = []): User
 {
     $permissionNames = array_values(array_unique(array_merge([
+        'settings.access',
         'roles.view',
         'roles.create',
         'roles.update',
@@ -29,14 +30,21 @@ test('guests are redirected from the settings page to the login page', function 
     $response->assertRedirect(route('login'));
 });
 
-test('authenticated users can visit the settings page', function () {
+test('authenticated users need permission to visit the settings page', function () {
+    Permission::findOrCreate('settings.access');
+
     $user = User::factory()->create();
 
-    $response = $this
+    $this
         ->actingAs($user)
-        ->get(route('settings.index'));
+        ->get(route('settings.index'))
+        ->assertForbidden();
 
-    $response
+    $user->givePermissionTo('settings.access');
+
+    $this
+        ->actingAs($user)
+        ->get(route('settings.index'))
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
             ->component('settings/Index')
@@ -117,6 +125,16 @@ test('authenticated users can visit the roles and permissions settings page', fu
             ->where('roles.1.label', 'User')
             ->where('roles.1.ai_description', 'Default portal user role for people who submit and track their own inquiries.')
             ->where('roles.1.protected', true)
+            ->has('roles', 12)
+            ->where('roles.2.name', 'compliance_officer')
+            ->where('roles.2.label', 'Compliance Officer')
+            ->where('roles.2.ai_description', 'Triages ethics, compliance, corruption, conflict of interest, policy breach, and whistleblowing inquiries and decides appropriate assignment or escalation.')
+            ->where('roles.5.name', 'hr_specialist')
+            ->where('roles.5.label', 'HR Specialist')
+            ->where('roles.7.name', 'legal_counsel')
+            ->where('roles.7.label', 'Legal Counsel')
+            ->where('roles.11.name', 'security_investigator')
+            ->where('roles.11.label', 'Security Investigator')
         );
 });
 
@@ -186,10 +204,10 @@ test('authenticated users can create roles', function () {
         ->get(route('roles-permissions.index'))
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
-            ->where('roles.2.name', 'manager')
-            ->where('roles.2.fallback_label', 'Manager')
-            ->where('roles.2.ai_description', 'Reviews and assigns incoming inquiries to the correct team.')
-            ->where('roles.2.label', 'Manager')
+            ->where('roles.8.name', 'manager')
+            ->where('roles.8.fallback_label', 'Manager')
+            ->where('roles.8.ai_description', 'Reviews and assigns incoming inquiries to the correct team.')
+            ->where('roles.8.label', 'Manager')
         );
 });
 

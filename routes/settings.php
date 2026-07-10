@@ -7,9 +7,11 @@ use Illuminate\Auth\Middleware\RequirePassword;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth'])->group(function () {
-    Route::inertia('settings', 'settings/Index')->name('settings.index');
+    Route::inertia('settings', 'settings/Index')
+        ->middleware('permission:settings.access')
+        ->name('settings.index');
     Route::get('settings/roles-permissions', [RolesPermissionsController::class, 'edit'])
-        ->middleware('permission:roles.view')
+        ->middleware(['permission:settings.access', 'permission:roles.view'])
         ->name('roles-permissions.index');
     Route::post('settings/roles-permissions', [RolesPermissionsController::class, 'store'])
         ->middleware('permission:roles.create')

@@ -3,14 +3,11 @@
 namespace Database\Seeders;
 
 use App\Models\User;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Role;
 
 class DatabaseSeeder extends Seeder
 {
-    use WithoutModelEvents;
-
     /**
      * Seed the application's database.
      */
@@ -18,6 +15,14 @@ class DatabaseSeeder extends Seeder
     {
         $userRole = Role::findOrCreate('user');
         $adminRole = Role::findOrCreate('admin');
+
+        $this->call(SpecialistSeeder::class);
+
+        $assignmentRoles = Role::query()
+            ->whereIn('name', $this->assignmentRoleNames())
+            ->orderBy('name')
+            ->get()
+            ->values();
 
         User::factory()
             ->count(50)
@@ -45,8 +50,29 @@ class DatabaseSeeder extends Seeder
                 'type' => 'system',
                 'status' => 'active',
             ])
-            ->each(function (User $user) use ($userRole): void {
-                $user->syncRoles([$userRole]);
+            ->each(function (User $user, int $index) use ($assignmentRoles): void {
+                $user->syncRoles([$assignmentRoles[$index % $assignmentRoles->count()]]);
             });
+
+        $this->call(InquirySeeder::class);
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function assignmentRoleNames(): array
+    {
+        return [
+            'legal_counsel',
+            'hr_specialist',
+            'security_investigator',
+            'physical_security_specialist',
+            'information_security_specialist',
+            'economic_security_specialist',
+            'compliance_officer',
+            'ethics_officer',
+            'occupational_safety_specialist',
+            'procurement_control_specialist',
+        ];
     }
 }

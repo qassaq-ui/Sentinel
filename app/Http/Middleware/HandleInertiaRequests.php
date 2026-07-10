@@ -45,6 +45,7 @@ class HandleInertiaRequests extends Middleware
             'auth' => [
                 'user' => $request->user(),
                 'can' => [
+                    'settingsAccess' => $request->user()?->can('settings.access') ?? false,
                     'rolesView' => $request->user()?->can('roles.view') ?? false,
                     'rolesCreate' => $request->user()?->can('roles.create') ?? false,
                     'rolesUpdate' => $request->user()?->can('roles.update') ?? false,

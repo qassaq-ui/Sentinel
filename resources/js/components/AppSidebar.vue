@@ -70,11 +70,15 @@ const mainNavItems = computed<NavItem[]>(() => [
                 },
             ]
         : []),
-    {
-        title: t('Settings'),
-        href: settingsIndex(),
-        icon: Settings,
-    },
+    ...(can.value.settingsAccess
+        ? [
+                {
+                    title: t('Settings'),
+                    href: settingsIndex(),
+                    icon: Settings,
+                },
+            ]
+        : []),
 ]);
 
 const footerNavItems = computed<NavItem[]>(() => [

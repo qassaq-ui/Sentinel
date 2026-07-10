@@ -1,6 +1,8 @@
 <?php
 
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Spatie\Permission\Models\Permission;
 use Tests\TestCase;
 
 /*
@@ -47,4 +49,14 @@ expect()->extend('toBeOne', function () {
 function something()
 {
     // ..
+}
+
+function inquiryUser(array $permissions): User
+{
+    collect($permissions)->each(fn (string $permission): Permission => Permission::findOrCreate($permission));
+
+    $user = User::factory()->create();
+    $user->givePermissionTo($permissions);
+
+    return $user;
 }

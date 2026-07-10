@@ -28,6 +28,66 @@ class RolesPermissionsController extends Controller
             'ai_description' => 'Default portal user role for people who submit and track their own inquiries.',
             'protected' => true,
         ],
+        [
+            'name' => 'legal_counsel',
+            'fallback_label' => 'Legal Counsel',
+            'ai_description' => 'Reviews inquiries with legal risk, contracts, regulatory issues, labor law questions, personal data concerns, and prepares legally safe response guidance.',
+            'protected' => false,
+        ],
+        [
+            'name' => 'hr_specialist',
+            'fallback_label' => 'HR Specialist',
+            'ai_description' => 'Handles inquiries about employment relations, workplace conduct, conflicts between employees, labor discipline, schedules, leave, onboarding, and HR policy questions.',
+            'protected' => false,
+        ],
+        [
+            'name' => 'security_investigator',
+            'fallback_label' => 'Security Investigator',
+            'ai_description' => 'Investigates incidents involving threats, misconduct, internal violations, suspicious behavior, access misuse, and coordinates fact-finding before response preparation.',
+            'protected' => false,
+        ],
+        [
+            'name' => 'physical_security_specialist',
+            'fallback_label' => 'Physical Security Specialist',
+            'ai_description' => 'Handles inquiries about site access, guards, badges, restricted areas, physical incidents, property protection, visitor control, and perimeter security.',
+            'protected' => false,
+        ],
+        [
+            'name' => 'information_security_specialist',
+            'fallback_label' => 'Information Security Specialist',
+            'ai_description' => 'Handles inquiries about cybersecurity, account access, data leaks, phishing, device misuse, system access violations, and information protection risks.',
+            'protected' => false,
+        ],
+        [
+            'name' => 'economic_security_specialist',
+            'fallback_label' => 'Economic Security Specialist',
+            'ai_description' => 'Handles inquiries about fraud, theft, financial abuse, conflicts of interest, supplier risks, asset misuse, and suspicious economic activity.',
+            'protected' => false,
+        ],
+        [
+            'name' => 'compliance_officer',
+            'fallback_label' => 'Compliance Officer',
+            'ai_description' => 'Triages ethics, compliance, corruption, conflict of interest, policy breach, and whistleblowing inquiries and decides appropriate assignment or escalation.',
+            'protected' => false,
+        ],
+        [
+            'name' => 'ethics_officer',
+            'fallback_label' => 'Ethics Officer',
+            'ai_description' => 'Handles inquiries about respectful conduct, discrimination, harassment, retaliation, ethical concerns, and workplace culture issues.',
+            'protected' => false,
+        ],
+        [
+            'name' => 'occupational_safety_specialist',
+            'fallback_label' => 'Occupational Safety Specialist',
+            'ai_description' => 'Handles inquiries about workplace safety, health risks, unsafe conditions, equipment hazards, PPE, incidents, and safety procedure violations.',
+            'protected' => false,
+        ],
+        [
+            'name' => 'procurement_control_specialist',
+            'fallback_label' => 'Procurement Control Specialist',
+            'ai_description' => 'Handles inquiries about procurement violations, supplier complaints, unfair tendering, delivery issues, conflicts of interest in purchasing, and contract execution risks.',
+            'protected' => false,
+        ],
     ];
 
     private const SYSTEM_PERMISSIONS = [
