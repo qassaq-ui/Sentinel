@@ -1,0 +1,35 @@
+export type User = {
+    id: number;
+    name: string;
+    email: string;
+    avatar?: string;
+    email_verified_at: string | null;
+    created_at: string;
+    updated_at: string;
+    [key: string]: unknown;
+};
+
+export type Auth = {
+    user: User;
+    can: {
+        rolesView: boolean;
+        rolesCreate: boolean;
+        rolesUpdate: boolean;
+        rolesDelete: boolean;
+        rolesPermissionsUpdate: boolean;
+        usersView: boolean;
+        usersCreate: boolean;
+        usersUpdate: boolean;
+        usersDelete: boolean;
+    };
+};
+
+/* @chisel-passkeys */
+export type Passkey = {
+    id: number;
+    name: string;
+    authenticator: string | null;
+    created_at_diff: string;
+    last_used_at_diff: string | null;
+};
+/* @end-chisel-passkeys */
