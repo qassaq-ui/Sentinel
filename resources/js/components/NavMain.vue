@@ -8,6 +8,7 @@ import {
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import { useCurrentUrl } from '@/composables/useCurrentUrl';
+import { toUrl } from '@/lib/utils';
 import { useTranslations } from '@/composables/useTranslations';
 import type { NavItem } from '@/types';
 
@@ -17,6 +18,12 @@ defineProps<{
 
 const { isCurrentUrl } = useCurrentUrl();
 const { t } = useTranslations();
+
+function isActiveItem(href: NavItem['href']): boolean {
+    const path = new URL(toUrl(href), window.location.origin).pathname;
+
+    return isCurrentUrl(href) || (path !== '/' && isCurrentUrl(href, undefined, true));
+}
 </script>
 
 <template>
@@ -26,7 +33,7 @@ const { t } = useTranslations();
             <SidebarMenuItem v-for="item in items" :key="item.title">
                 <SidebarMenuButton
                     as-child
-                    :is-active="isCurrentUrl(item.href)"
+                    :is-active="isActiveItem(item.href)"
                     :tooltip="item.title"
                 >
                     <Link :href="item.href">

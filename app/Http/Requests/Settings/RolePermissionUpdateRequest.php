@@ -10,6 +10,14 @@ class RolePermissionUpdateRequest extends FormRequest
 {
     public const SYSTEM_PERMISSIONS = [
         'settings.access',
+        'inquiries.view',
+        'inquiries.create',
+        'inquiries.update',
+        'inquiries.delete',
+        'dictionaries.view',
+        'dictionaries.create',
+        'dictionaries.update',
+        'dictionaries.delete',
         'roles.view',
         'roles.create',
         'roles.update',

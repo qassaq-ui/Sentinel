@@ -4,12 +4,11 @@ namespace App\Http\Middleware;
 
 use App\Http\Requests\Settings\RolePermissionUpdateRequest;
 use Closure;
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
-use Spatie\Permission\PermissionRegistrar;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
+use Spatie\Permission\PermissionRegistrar;
 use Symfony\Component\HttpFoundation\Response;
 
 class SyncProtectedRolePermissions
@@ -28,10 +27,17 @@ class SyncProtectedRolePermissions
         app(PermissionRegistrar::class)->forgetCachedPermissions();
 
         collect(RolePermissionUpdateRequest::SYSTEM_PERMISSIONS)
-            ->each(fn (string $permission): Permission => Permission::findOrCreate($permission));
+            ->each(fn (string $permission): Permission => Permission::findOrCreate($permission, 'web'));
 
-        $adminRole = Role::findOrCreate('admin');
-        $adminRole->syncPermissions(Permission::query()->pluck('name')->all());
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+
+        $adminRole = Role::findOrCreate('admin', 'web');
+        $adminRole->syncPermissions(
+            Permission::query()
+                ->where('guard_name', 'web')
+                ->pluck('name')
+                ->all()
+        );
 
         app(PermissionRegistrar::class)->forgetCachedPermissions();
     }

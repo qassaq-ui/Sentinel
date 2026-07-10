@@ -1,12 +1,11 @@
 <?php
 
-namespace App\Http\Requests\Settings;
+namespace App\Http\Requests;
 
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 
-class RoleStoreRequest extends FormRequest
+class InquiryOutcomeUpdateRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -24,13 +23,11 @@ class RoleStoreRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'fallback_label' => [
-                'required',
-                'string',
-                'max:255',
-                Rule::unique('roles', 'fallback_label')->where('guard_name', 'web'),
-            ],
-            'ai_description' => ['nullable', 'string', 'max:2000'],
+            'fallback_name' => ['required', 'string', 'max:255'],
+            'fallback_description' => ['nullable', 'string', 'max:2000'],
+            'ai_instruction' => ['required', 'string', 'max:4000'],
+            'is_active' => ['required', 'boolean'],
+            'sort_order' => ['required', 'integer', 'min:0'],
         ];
     }
 }

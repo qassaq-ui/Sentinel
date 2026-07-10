@@ -24,14 +24,15 @@ class RoleUpdateRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => [
+            'fallback_label' => [
                 'required',
                 'string',
                 'max:255',
-                Rule::unique('roles', 'name')
+                Rule::unique('roles', 'fallback_label')
                     ->where('guard_name', 'web')
                     ->ignore($this->route('role')),
             ],
+            'ai_description' => ['nullable', 'string', 'max:2000'],
         ];
     }
 }

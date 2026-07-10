@@ -25,10 +25,12 @@ const isEditRoleDialogOpen = ref(false);
 const editingRole = ref<Role | null>(null);
 const { t } = useTranslations();
 const createRoleForm = useForm({
-    name: '',
+    fallback_label: '',
+    ai_description: '',
 });
 const updateRoleForm = useForm({
-    name: '',
+    fallback_label: '',
+    ai_description: '',
 });
 const deleteRoleForm = useForm({});
 
@@ -102,7 +104,10 @@ function openEditRoleDialog(role: Role) {
     }
 
     editingRole.value = role;
-    updateRoleForm.defaults({ name: role.name });
+    updateRoleForm.defaults({
+        fallback_label: role.fallback_label ?? role.label,
+        ai_description: role.ai_description ?? '',
+    });
     updateRoleForm.reset();
     updateRoleForm.clearErrors();
     isEditRoleDialogOpen.value = true;
@@ -149,8 +154,10 @@ function deleteRole() {
 
     <RoleCreateDialog
         v-model:open="isCreateRoleDialogOpen"
-        v-model:name="createRoleForm.name"
-        :error="createRoleForm.errors.name"
+        v-model:fallback-label="createRoleForm.fallback_label"
+        v-model:ai-description="createRoleForm.ai_description"
+        :error="createRoleForm.errors.fallback_label"
+        :description-error="createRoleForm.errors.ai_description"
         :processing="createRoleForm.processing"
         :can-create="can.rolesCreate"
         @submit="createRole"
@@ -158,9 +165,11 @@ function deleteRole() {
 
     <RoleEditDialog
         v-model:open="isEditRoleDialogOpen"
-        v-model:name="updateRoleForm.name"
+        v-model:fallback-label="updateRoleForm.fallback_label"
+        v-model:ai-description="updateRoleForm.ai_description"
         :role="editingRole"
-        :error="updateRoleForm.errors.name"
+        :error="updateRoleForm.errors.fallback_label"
+        :description-error="updateRoleForm.errors.ai_description"
         :update-processing="updateRoleForm.processing"
         :delete-processing="deleteRoleForm.processing"
         :can-delete="can.rolesDelete"

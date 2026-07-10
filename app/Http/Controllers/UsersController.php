@@ -85,7 +85,7 @@ class UsersController extends Controller
         $userRoleId = Role::findOrCreate('user')->id;
 
         $users = fn (?int $page = null): LengthAwarePaginator => User::query()
-            ->with('roles:id,name')
+            ->with('roles:id,name,fallback_label')
             ->select(['id', 'type', 'name', 'email', 'status', 'created_at'])
             ->where('type', $type)
             ->latest('id')
@@ -105,7 +105,7 @@ class UsersController extends Controller
             'status' => $user->status,
             'role_id' => $type === 'regular' ? $userRoleId : $user->roles->first()?->id,
             'roles' => $type === 'regular'
-                ? [__('User')]
+                ? ['User']
                 : $user->roles->map(fn (Role $role): string => $this->roleLabel($role))->values()->all(),
             'created_at' => $user->created_at?->format('d.m.Y H:i'),
         ]);
@@ -117,7 +117,8 @@ class UsersController extends Controller
     private function roles(): Collection
     {
         return Role::query()
-            ->select(['id', 'name'])
+            ->select(['id', 'name', 'fallback_label'])
+            ->orderByRaw("case when name = 'admin' then 0 when name = 'user' then 1 else 2 end")
             ->orderBy('name')
             ->get()
             ->map(fn (Role $role): array => [
@@ -138,9 +139,9 @@ class UsersController extends Controller
 
     private function roleLabel(Role $role): string
     {
-        return match ($role->name) {
-            'admin' => __('Administrator'),
-            'user' => __('User'),
+        return $role->fallback_label ?: match ($role->name) {
+            'admin' => 'Administrator',
+            'user' => 'User',
             default => Str::headline($role->name),
         };
     }

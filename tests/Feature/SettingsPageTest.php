@@ -56,38 +56,67 @@ test('authenticated users can visit the roles and permissions settings page', fu
             ->component('settings/RolesPermissions')
             ->where('roles.0.name', 'admin')
             ->where('roles.0.label', 'Administrator')
+            ->where('roles.0.ai_description', 'Has full access to manage users, roles, permissions, dictionaries, inquiries, and system settings.')
             ->where('roles.0.protected', true)
-            ->has('roles.0.permissions', 10)
+            ->has('roles.0.permissions', 18)
             ->where('permissions.0.name', 'settings.access')
             ->where('permissions.0.group', 'Settings')
             ->where('permissions.0.label', 'Allow access to system settings')
-            ->where('permissions.1.name', 'roles.view')
-            ->where('permissions.1.group', 'Roles')
-            ->where('permissions.1.label', 'Allow viewing roles page')
-            ->where('permissions.2.name', 'roles.create')
-            ->where('permissions.2.group', 'Roles')
-            ->where('permissions.2.label', 'Allow creating roles')
-            ->where('permissions.3.name', 'roles.update')
-            ->where('permissions.3.group', 'Roles')
-            ->where('permissions.3.label', 'Allow editing roles')
-            ->where('permissions.4.name', 'roles.delete')
-            ->where('permissions.4.group', 'Roles')
-            ->where('permissions.4.label', 'Allow deleting roles')
-            ->where('permissions.5.name', 'roles.permissions.update')
-            ->where('permissions.5.group', 'Roles')
-            ->where('permissions.5.label', 'Allow managing role permissions')
-            ->where('permissions.6.name', 'users.view')
-            ->where('permissions.6.group', 'Users')
-            ->where('permissions.6.label', 'Allow viewing users page')
-            ->where('permissions.7.name', 'users.create')
-            ->where('permissions.7.group', 'Users')
-            ->where('permissions.7.label', 'Allow creating users')
-            ->where('permissions.8.name', 'users.update')
-            ->where('permissions.8.group', 'Users')
-            ->where('permissions.8.label', 'Allow editing users')
-            ->where('permissions.9.name', 'users.delete')
-            ->where('permissions.9.group', 'Users')
-            ->where('permissions.9.label', 'Allow deleting users')
+            ->where('permissions.1.name', 'inquiries.view')
+            ->where('permissions.1.group', 'Inquiries')
+            ->where('permissions.1.label', 'Allow viewing inquiries page')
+            ->where('permissions.2.name', 'inquiries.create')
+            ->where('permissions.2.group', 'Inquiries')
+            ->where('permissions.2.label', 'Allow creating inquiries')
+            ->where('permissions.3.name', 'inquiries.update')
+            ->where('permissions.3.group', 'Inquiries')
+            ->where('permissions.3.label', 'Allow editing inquiries')
+            ->where('permissions.4.name', 'inquiries.delete')
+            ->where('permissions.4.group', 'Inquiries')
+            ->where('permissions.4.label', 'Allow deleting inquiries')
+            ->where('permissions.5.name', 'dictionaries.view')
+            ->where('permissions.5.group', 'Dictionaries')
+            ->where('permissions.5.label', 'Allow viewing dictionaries page')
+            ->where('permissions.6.name', 'dictionaries.create')
+            ->where('permissions.6.group', 'Dictionaries')
+            ->where('permissions.6.label', 'Allow creating dictionary entries')
+            ->where('permissions.7.name', 'dictionaries.update')
+            ->where('permissions.7.group', 'Dictionaries')
+            ->where('permissions.7.label', 'Allow editing dictionary entries')
+            ->where('permissions.8.name', 'dictionaries.delete')
+            ->where('permissions.8.group', 'Dictionaries')
+            ->where('permissions.8.label', 'Allow deleting dictionary entries')
+            ->where('permissions.9.name', 'roles.view')
+            ->where('permissions.9.group', 'Roles')
+            ->where('permissions.9.label', 'Allow viewing roles page')
+            ->where('permissions.10.name', 'roles.create')
+            ->where('permissions.10.group', 'Roles')
+            ->where('permissions.10.label', 'Allow creating roles')
+            ->where('permissions.11.name', 'roles.update')
+            ->where('permissions.11.group', 'Roles')
+            ->where('permissions.11.label', 'Allow editing roles')
+            ->where('permissions.12.name', 'roles.delete')
+            ->where('permissions.12.group', 'Roles')
+            ->where('permissions.12.label', 'Allow deleting roles')
+            ->where('permissions.13.name', 'roles.permissions.update')
+            ->where('permissions.13.group', 'Roles')
+            ->where('permissions.13.label', 'Allow managing role permissions')
+            ->where('permissions.14.name', 'users.view')
+            ->where('permissions.14.group', 'Users')
+            ->where('permissions.14.label', 'Allow viewing users page')
+            ->where('permissions.15.name', 'users.create')
+            ->where('permissions.15.group', 'Users')
+            ->where('permissions.15.label', 'Allow creating users')
+            ->where('permissions.16.name', 'users.update')
+            ->where('permissions.16.group', 'Users')
+            ->where('permissions.16.label', 'Allow editing users')
+            ->where('permissions.17.name', 'users.delete')
+            ->where('permissions.17.group', 'Users')
+            ->where('permissions.17.label', 'Allow deleting users')
+            ->where('roles.1.name', 'user')
+            ->where('roles.1.label', 'User')
+            ->where('roles.1.ai_description', 'Default portal user role for people who submit and track their own inquiries.')
+            ->where('roles.1.protected', true)
         );
 });
 
@@ -139,63 +168,81 @@ test('authenticated users can create roles', function () {
     $this
         ->actingAs($user)
         ->post(route('roles-permissions.store'), [
-            'name' => 'Менеджер',
+            'fallback_label' => 'Manager',
+            'ai_description' => 'Reviews and assigns incoming inquiries to the correct team.',
         ])
         ->assertRedirect();
 
-    $this->assertDatabaseHas('roles', [
-        'name' => 'Менеджер',
-        'guard_name' => 'web',
-    ]);
+    $role = Role::query()->where('fallback_label', 'Manager')->firstOrFail();
+
+    expect($role->name)->toBe('manager')
+        ->and($role->uuid)->not->toBeEmpty()
+        ->and($role->label_key)->toBe("roles.{$role->uuid}.label")
+        ->and($role->ai_description)->toBe('Reviews and assigns incoming inquiries to the correct team.')
+        ->and((bool) $role->is_protected)->toBeFalse();
 
     $this
         ->actingAs($user)
         ->get(route('roles-permissions.index'))
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
-            ->where('roles.1.name', 'Менеджер')
-            ->where('roles.1.label', 'Менеджер')
+            ->where('roles.2.name', 'manager')
+            ->where('roles.2.fallback_label', 'Manager')
+            ->where('roles.2.ai_description', 'Reviews and assigns incoming inquiries to the correct team.')
+            ->where('roles.2.label', 'Manager')
         );
 });
 
-test('role names must be unique', function () {
+test('role fallback labels must be unique', function () {
     $user = userWithRolesPermissions(['roles.create']);
-    Role::create(['name' => 'Менеджер']);
+    Role::create([
+        'name' => 'manager',
+        'guard_name' => 'web',
+        'fallback_label' => 'Manager',
+    ]);
 
     $this
         ->actingAs($user)
         ->post(route('roles-permissions.store'), [
-            'name' => 'Менеджер',
+            'fallback_label' => 'Manager',
         ])
-        ->assertSessionHasErrors('name');
+        ->assertSessionHasErrors('fallback_label');
 });
 
-test('authenticated users can update role names', function () {
+test('authenticated users can update role labels', function () {
     $user = userWithRolesPermissions(['roles.update']);
-    $role = Role::create(['name' => 'manager']);
+    $role = Role::create([
+        'name' => 'manager',
+        'guard_name' => 'web',
+        'fallback_label' => 'Manager',
+    ]);
 
     $this
         ->actingAs($user)
         ->patch(route('roles-permissions.update', $role), [
-            'name' => 'editor',
+            'fallback_label' => 'Editor',
+            'ai_description' => 'Edits inquiry content and prepares responses.',
         ])
         ->assertRedirect();
 
-    expect($role->fresh()->name)->toBe('editor');
+    expect($role->fresh()->name)->toBe('manager')
+        ->and($role->fresh()->fallback_label)->toBe('Editor')
+        ->and($role->fresh()->ai_description)->toBe('Edits inquiry content and prepares responses.');
 });
 
-test('administrator role cannot be updated or deleted', function () {
+test('system roles cannot be updated or deleted', function (string $roleName) {
     $user = userWithRolesPermissions(['roles.update', 'roles.delete']);
-    $role = Role::create(['name' => 'admin']);
+    $role = Role::create(['name' => $roleName]);
 
     $this
         ->actingAs($user)
         ->patch(route('roles-permissions.update', $role), [
-            'name' => 'owner',
+            'fallback_label' => 'Owner',
+            'ai_description' => 'Owns the entire system.',
         ])
         ->assertForbidden();
 
-    expect($role->fresh()->name)->toBe('admin');
+    expect($role->fresh()->name)->toBe($roleName);
 
     $this
         ->actingAs($user)
@@ -203,7 +250,7 @@ test('administrator role cannot be updated or deleted', function () {
         ->assertForbidden();
 
     $this->assertModelExists($role);
-});
+})->with(['admin', 'user']);
 
 test('authenticated users can delete non protected roles', function () {
     $user = userWithRolesPermissions(['roles.delete']);

@@ -4,6 +4,7 @@ import {
     BookOpen,
     FolderGit2,
     Inbox,
+    LibraryBig,
     LayoutGrid,
     Settings,
     Users,
@@ -25,6 +26,7 @@ import {
 } from '@/components/ui/sidebar';
 import { useTranslations } from '@/composables/useTranslations';
 import { dashboard } from '@/routes';
+import { index as dictionariesIndex } from '@/routes/dictionaries';
 import { index as inquiriesIndex } from '@/routes/inquiries';
 import { index as settingsIndex } from '@/routes/settings';
 import { index as usersIndex } from '@/routes/users';
@@ -41,11 +43,24 @@ const mainNavItems = computed<NavItem[]>(() => [
         href: dashboard(),
         icon: LayoutGrid,
     },
-    {
-        title: t('Inquiries'),
-        href: inquiriesIndex(),
-        icon: Inbox,
-    },
+    ...(can.value.inquiriesView
+        ? [
+                {
+                    title: t('Inquiries'),
+                    href: inquiriesIndex(),
+                    icon: Inbox,
+                },
+            ]
+        : []),
+    ...(can.value.dictionariesView
+        ? [
+                {
+                    title: t('Dictionaries'),
+                    href: dictionariesIndex(),
+                    icon: LibraryBig,
+                },
+            ]
+        : []),
     ...(can.value.usersView
         ? [
                 {

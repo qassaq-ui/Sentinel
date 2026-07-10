@@ -17,6 +17,14 @@ export type Auth = {
         rolesUpdate: boolean;
         rolesDelete: boolean;
         rolesPermissionsUpdate: boolean;
+        inquiriesView: boolean;
+        inquiriesCreate: boolean;
+        inquiriesUpdate: boolean;
+        inquiriesDelete: boolean;
+        dictionariesView: boolean;
+        dictionariesCreate: boolean;
+        dictionariesUpdate: boolean;
+        dictionariesDelete: boolean;
         usersView: boolean;
         usersCreate: boolean;
         usersUpdate: boolean;

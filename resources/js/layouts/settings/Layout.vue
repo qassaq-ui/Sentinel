@@ -29,7 +29,7 @@ const sidebarNavItems = computed<NavItem[]>(() => [
         : []),
 ]);
 
-const { isCurrentOrParentUrl } = useCurrentUrl();
+const { isCurrentUrl } = useCurrentUrl();
 </script>
 
 <template>
@@ -48,7 +48,7 @@ const { isCurrentOrParentUrl } = useCurrentUrl();
                         variant="ghost"
                         :class="[
                             'w-full justify-start',
-                            { 'bg-muted': isCurrentOrParentUrl(item.href) },
+                            { 'bg-muted': isCurrentUrl(item.href) },
                         ]"
                         as-child
                     >

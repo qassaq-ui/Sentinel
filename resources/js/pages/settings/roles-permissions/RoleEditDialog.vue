@@ -17,8 +17,10 @@ import type { Role } from './types';
 type Props = {
     open: boolean;
     role: Role | null;
-    name: string;
+    fallbackLabel: string;
+    aiDescription: string;
     error?: string;
+    descriptionError?: string;
     updateProcessing: boolean;
     deleteProcessing: boolean;
     canDelete: boolean;
@@ -28,7 +30,8 @@ defineProps<Props>();
 
 const emit = defineEmits<{
     'update:open': [value: boolean];
-    'update:name': [value: string];
+    'update:fallbackLabel': [value: string];
+    'update:aiDescription': [value: string];
     submit: [];
     delete: [];
 }>();
@@ -51,12 +54,39 @@ const { t } = useTranslations();
                     <Label for="edit-role-name">{{ t('Role name') }}</Label>
                     <Input
                         id="edit-role-name"
-                        :model-value="name"
-                        name="name"
+                        :model-value="fallbackLabel"
+                        name="fallback_label"
                         autocomplete="off"
-                        @update:model-value="emit('update:name', String($event))"
+                        @update:model-value="
+                            emit('update:fallbackLabel', String($event))
+                        "
                     />
                     <InputError :message="error" />
+                </div>
+
+                <div class="grid gap-2">
+                    <Label for="edit-role-ai-description">
+                        {{ t('AI description') }}
+                    </Label>
+                    <textarea
+                        id="edit-role-ai-description"
+                        :value="aiDescription"
+                        name="ai_description"
+                        rows="4"
+                        class="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex min-h-24 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+                        :placeholder="
+                            t(
+                                'Describe what this role is responsible for in English.',
+                            )
+                        "
+                        @input="
+                            emit(
+                                'update:aiDescription',
+                                ($event.target as HTMLTextAreaElement).value,
+                            )
+                        "
+                    />
+                    <InputError :message="descriptionError" />
                 </div>
 
                 <DialogFooter

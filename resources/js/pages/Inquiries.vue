@@ -10,11 +10,14 @@ import {
 } from '@/components/ui/table';
 import { useTranslations } from '@/composables/useTranslations';
 import { create as inquiriesCreate } from '@/routes/inquiries';
-import { Head, Link } from '@inertiajs/vue3';
+import type { Auth } from '@/types/auth';
+import { Head, Link, usePage } from '@inertiajs/vue3';
 import { FileText } from '@lucide/vue';
 import { computed, ref } from 'vue';
 
 const { t } = useTranslations();
+const page = usePage<{ auth: Auth }>();
+const can = computed(() => page.props.auth.can);
 
 type InquiryTab = 'all' | 'anonymous' | 'archived';
 
@@ -46,6 +49,7 @@ const tabIndicatorClass = computed(() => {
                 <div class="flex items-center justify-between gap-4">
                     <h1 class="text-lg font-semibold">{{ t('Inquiries') }}</h1>
                     <Button
+                        v-if="can.inquiriesCreate"
                         as-child
                         variant="link"
                         class="h-auto px-0 py-0 font-semibold text-[var(--color-tab)] hover:text-[var(--color-tab)]"

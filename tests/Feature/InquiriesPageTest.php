@@ -2,6 +2,17 @@
 
 use App\Models\User;
 use Inertia\Testing\AssertableInertia as Assert;
+use Spatie\Permission\Models\Permission;
+
+function inquiryUser(array $permissions): User
+{
+    collect($permissions)->each(fn (string $permission): Permission => Permission::findOrCreate($permission));
+
+    $user = User::factory()->create();
+    $user->givePermissionTo($permissions);
+
+    return $user;
+}
 
 test('guests are redirected from the inquiries page to the login page', function () {
     $response = $this->get(route('inquiries.index'));
@@ -16,7 +27,7 @@ test('guests are redirected from the create inquiry page to the login page', fun
 });
 
 test('authenticated users can visit the inquiries page', function () {
-    $user = User::factory()->create();
+    $user = inquiryUser(['inquiries.view']);
 
     $this
         ->actingAs($user)
@@ -28,7 +39,7 @@ test('authenticated users can visit the inquiries page', function () {
 });
 
 test('authenticated users can visit the create inquiry page', function () {
-    $user = User::factory()->create();
+    $user = inquiryUser(['inquiries.create']);
 
     $this
         ->actingAs($user)

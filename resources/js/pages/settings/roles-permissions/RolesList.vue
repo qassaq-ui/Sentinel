@@ -44,6 +44,12 @@ const { t } = useTranslations();
                         <span class="block truncate text-sm font-medium">
                             {{ role.label }}
                         </span>
+                        <span
+                            v-if="role.ai_description"
+                            class="mt-1 block line-clamp-2 text-xs leading-5 text-muted-foreground"
+                        >
+                            {{ role.ai_description }}
+                        </span>
                     </span>
                 </Button>
                 <Button
