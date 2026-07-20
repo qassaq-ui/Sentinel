@@ -24,7 +24,6 @@ class UserUpdateRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'type' => ['required', Rule::in(['regular', 'system'])],
             'status' => ['required', Rule::in(['active', 'blocked'])],
             'name' => ['required', 'string', 'max:255'],
             'email' => [
@@ -37,8 +36,7 @@ class UserUpdateRequest extends FormRequest
             ],
             'password' => ['nullable', 'string', 'min:8', 'max:255'],
             'role_id' => [
-                'required_if:type,system',
-                'nullable',
+                'required',
                 'integer',
                 Rule::exists('roles', 'id'),
             ],

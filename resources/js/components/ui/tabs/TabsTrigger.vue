@@ -17,7 +17,7 @@ const forwardedProps = useForwardProps(delegatedProps);
         v-bind="forwardedProps"
         :class="
             cn(
-                'data-[state=active]:bg-[var(--color-tab)] data-[state=active]:text-white dark:data-[state=active]:bg-[var(--color-tab)] dark:data-[state=active]:text-white focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:outline-ring text-foreground dark:text-muted-foreground inline-flex h-[calc(100%-1px)] flex-1 items-center justify-center gap-1.5 rounded-md border border-transparent px-3 py-1 text-sm font-medium whitespace-nowrap transform-gpu transition-[color,box-shadow,transform,background-color] duration-200 ease-[cubic-bezier(0.34,1.56,0.64,1)] focus-visible:ring-[3px] focus-visible:outline-1 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:scale-[1.03] data-[state=active]:shadow-sm',
+                'inline-flex h-9 flex-1 items-center justify-center gap-1.5 rounded-lg border border-transparent px-3.5 py-1 text-[13px] font-medium whitespace-nowrap text-slate-500 transition-[color,background-color,box-shadow] duration-150 hover:text-slate-800 focus-visible:ring-2 focus-visible:ring-[#007aff]/20 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-white data-[state=active]:text-[#1d1d1f] data-[state=active]:shadow-[0_1px_3px_rgba(0,0,0,0.12)] dark:text-slate-400 dark:hover:text-white dark:data-[state=active]:bg-white/15 dark:data-[state=active]:text-white dark:data-[state=active]:shadow-none',
                 props.class,
             )
         "

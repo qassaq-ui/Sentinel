@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Form, Head } from '@inertiajs/vue3';
 import FormField from '@/components/FormField.vue';
 import InputError from '@/components/InputError.vue';
 import PasswordInput from '@/components/PasswordInput.vue';
@@ -8,14 +9,11 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useTranslations } from '@/composables/useTranslations';
-import { register } from '@/routes';
 import { store } from '@/routes/login';
 import { request } from '@/routes/password';
-import { Form, Head } from '@inertiajs/vue3';
 
 defineOptions({
     layout: {
-        title: 'Log in to your account',
         description: 'Enter your email and password below to log in',
     },
 });
@@ -33,7 +31,7 @@ const { t } = useTranslations();
 
     <div
         v-if="status"
-        class="mb-4 text-center text-sm font-medium text-green-600"
+        class="mb-5 rounded-xl bg-emerald-50 px-4 py-3 text-center text-sm font-medium text-emerald-700"
     >
         {{ status }}
     </div>
@@ -41,14 +39,16 @@ const { t } = useTranslations();
     <Form
         v-bind="store.form()"
         :reset-on-success="['password']"
+        disable-while-processing
         v-slot="{ errors, processing }"
-        class="flex flex-col gap-6"
+        class="flex flex-col gap-5 inert:pointer-events-none inert:opacity-70"
     >
-        <div class="grid gap-6">
+        <div class="grid gap-5">
             <FormField
-                label="{{ t('Email address') }}"
+                :label="t('Email address')"
                 forId="email"
                 :error="errors.email"
+                class="[&_label]:text-[0.8125rem] [&_label]:font-semibold [&_label]:text-slate-700"
             >
                 <Input
                     id="email"
@@ -59,16 +59,22 @@ const { t } = useTranslations();
                     :tabindex="1"
                     autocomplete="email"
                     placeholder="email@example.com"
+                    class="h-12 rounded-xl border-0 bg-[#f5f5f7] px-4 text-base shadow-none ring-1 ring-black/6 transition-shadow placeholder:text-slate-400 focus-visible:ring-2 focus-visible:ring-[#0071e3] md:text-base"
                 />
             </FormField>
 
             <div class="grid gap-2">
                 <div class="flex items-center justify-between">
-                    <Label for="password">{{ t('Password') }}</Label>
+                    <Label
+                        for="password"
+                        class="text-[0.8125rem] font-semibold text-slate-700"
+                    >
+                        {{ t('Password') }}
+                    </Label>
                     <TextLink
                         v-if="canResetPassword"
                         :href="request()"
-                        class="text-sm"
+                        class="text-[0.8125rem] font-medium text-[#0071e3] no-underline hover:text-[#0077ed] hover:underline"
                         :tabindex="5"
                     >
                         {{ t('Forgot your password?') }}
@@ -81,12 +87,16 @@ const { t } = useTranslations();
                     :tabindex="2"
                     autocomplete="current-password"
                     :placeholder="t('Password')"
+                    class="h-12 rounded-xl border-0 bg-[#f5f5f7] px-4 pr-12 text-base shadow-none ring-1 ring-black/6 transition-shadow placeholder:text-slate-400 focus-visible:ring-2 focus-visible:ring-[#0071e3] md:text-base"
                 />
                 <InputError :message="errors.password" />
             </div>
 
             <div class="flex items-center justify-between">
-                <Label for="remember" class="flex items-center space-x-3">
+                <Label
+                    for="remember"
+                    class="flex cursor-pointer items-center gap-3 text-sm font-normal text-slate-600"
+                >
                     <Checkbox id="remember" name="remember" :tabindex="3" />
                     <span>{{ t('Remember me') }}</span>
                 </Label>
@@ -96,16 +106,10 @@ const { t } = useTranslations();
                 :processing="processing"
                 tabindex="4"
                 test-id="login-button"
+                class="h-12 rounded-xl bg-[#0071e3] text-base font-semibold text-white shadow-none hover:bg-[#0077ed] active:scale-[0.99]"
             >
                 {{ t('Log in') }}
             </SubmitButton>
-        </div>
-
-        <div class="text-center text-sm text-muted-foreground">
-            {{ t("Don't have an account?") }}
-            <TextLink :href="register()" :tabindex="5">{{
-                t('Sign up')
-            }}</TextLink>
         </div>
     </Form>
 </template>

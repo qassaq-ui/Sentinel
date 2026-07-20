@@ -13,7 +13,6 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        $userRole = Role::findOrCreate('user');
         $adminRole = Role::findOrCreate('admin');
 
         $this->call(SpecialistSeeder::class);
@@ -25,19 +24,8 @@ class DatabaseSeeder extends Seeder
             ->values();
 
         User::factory()
-            ->count(50)
-            ->create([
-                'type' => 'regular',
-                'status' => 'active',
-            ])
-            ->each(function (User $user) use ($userRole): void {
-                $user->syncRoles([$userRole]);
-            });
-
-        User::factory()
             ->count(25)
             ->create([
-                'type' => 'system',
                 'status' => 'active',
             ])
             ->each(function (User $user) use ($adminRole): void {
@@ -47,7 +35,6 @@ class DatabaseSeeder extends Seeder
         User::factory()
             ->count(25)
             ->create([
-                'type' => 'system',
                 'status' => 'active',
             ])
             ->each(function (User $user, int $index) use ($assignmentRoles): void {

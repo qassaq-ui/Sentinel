@@ -36,7 +36,6 @@ class AssigneeRecommendationService
                         Inquiry::STATUS_WITHDRAWN,
                     ]),
             ])
-            ->where('type', 'system')
             ->where('status', 'active')
             ->get();
 

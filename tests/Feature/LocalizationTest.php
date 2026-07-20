@@ -8,11 +8,12 @@ test('locale data is shared with inertia pages', function () {
     $response
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
-            ->component('Welcome')
+            ->component('public/Inquiries/Create')
             ->where('locale.current', 'en')
-            ->has('locale.available', 2)
+            ->has('locale.available', 3)
             ->where('locale.available.0.code', 'en')
-            ->where('locale.available.1.code', 'ru')
+            ->where('locale.available.1.code', 'kk')
+            ->where('locale.available.2.code', 'ru')
             ->etc()
         );
 });

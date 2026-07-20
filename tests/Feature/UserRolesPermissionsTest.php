@@ -63,7 +63,8 @@ test('administrators can access roles and permissions without manual permission 
         ->get(route('roles-permissions.index'))
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
-            ->component('settings/RolesPermissions')
+            ->component('Users')
+            ->where('initialTab', 'roles')
         );
 });
 

@@ -1,7 +1,7 @@
 <script setup lang="ts">
+import { Monitor, Moon, Sun } from '@lucide/vue';
 import { useAppearance } from '@/composables/useAppearance';
 import { useTranslations } from '@/composables/useTranslations';
-import { Monitor, Moon, Sun } from '@lucide/vue';
 
 const { appearance, updateAppearance } = useAppearance();
 const { t } = useTranslations();
@@ -15,17 +15,17 @@ const tabs = [
 
 <template>
     <div
-        class="inline-flex gap-1 rounded-lg bg-neutral-100 p-1 dark:bg-neutral-800"
+        class="inline-flex h-10 gap-0.5 rounded-[10px] bg-black/[0.055] p-0.5 dark:bg-white/[0.08]"
     >
         <button
             v-for="{ value, Icon, label } in tabs"
             :key="value"
             @click="updateAppearance(value)"
             :class="[
-                'flex items-center rounded-md px-3.5 py-1.5 transition-colors',
+                'flex h-9 items-center rounded-lg px-3.5 text-[13px] font-medium transition-[color,background-color,box-shadow] duration-150',
                 appearance === value
-                    ? 'bg-[var(--color-tab)] text-white shadow-xs dark:bg-[var(--color-tab)] dark:text-white'
-                    : 'text-neutral-500 hover:bg-neutral-200/60 hover:text-black dark:text-neutral-400 dark:hover:bg-neutral-700/60',
+                    ? 'bg-white text-[#1d1d1f] shadow-[0_1px_3px_rgba(0,0,0,0.12)] dark:bg-white/15 dark:text-white dark:shadow-none'
+                    : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white',
             ]"
         >
             <component :is="Icon" class="-ml-1 h-4 w-4" />

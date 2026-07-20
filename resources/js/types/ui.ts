@@ -14,6 +14,23 @@ export type LocaleOption = {
     uploaded: boolean;
 };
 
+export type LocalizationSettingsLocale = LocaleOption & {
+    enabled: boolean;
+    fallback: boolean;
+};
+
+export type LocalizationSettings = {
+    fallback: string;
+    locales: LocalizationSettingsLocale[];
+};
+
+export type InquirySettings = {
+    numberPrefix: string;
+    sequencePadding: number;
+    aiScreeningEnabled: boolean;
+    aiScreeningInstructions: string;
+};
+
 export type Localization = {
     current: string;
     available: LocaleOption[];

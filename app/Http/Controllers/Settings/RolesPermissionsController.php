@@ -23,12 +23,6 @@ class RolesPermissionsController extends Controller
             'protected' => true,
         ],
         [
-            'name' => 'user',
-            'fallback_label' => 'User',
-            'ai_description' => 'Default portal user role for people who submit and track their own inquiries.',
-            'protected' => true,
-        ],
-        [
             'name' => 'legal_counsel',
             'fallback_label' => 'Legal Counsel',
             'ai_description' => 'Reviews inquiries with legal risk, contracts, regulatory issues, labor law questions, personal data concerns, and prepares legally safe response guidance.',
@@ -93,9 +87,14 @@ class RolesPermissionsController extends Controller
     private const SYSTEM_PERMISSIONS = [
         ['name' => 'settings.access', 'group' => 'Settings', 'label' => 'Allow access to system settings'],
         ['name' => 'inquiries.view', 'group' => 'Inquiries', 'label' => 'Allow viewing inquiries page'],
-        ['name' => 'inquiries.create', 'group' => 'Inquiries', 'label' => 'Allow creating inquiries'],
+        ['name' => 'inquiries.view_all', 'group' => 'Inquiries', 'label' => 'Allow viewing all inquiries'],
+        ['name' => 'inquiries.view_assigned', 'group' => 'Inquiries', 'label' => 'Allow viewing assigned inquiries'],
         ['name' => 'inquiries.update', 'group' => 'Inquiries', 'label' => 'Allow editing inquiries'],
         ['name' => 'inquiries.delete', 'group' => 'Inquiries', 'label' => 'Allow deleting inquiries'],
+        ['name' => 'inquiries.assign', 'group' => 'Inquiries', 'label' => 'Allow assigning inquiry executors'],
+        ['name' => 'inquiries.respond', 'group' => 'Inquiries', 'label' => 'Allow preparing inquiry responses'],
+        ['name' => 'inquiries.approve', 'group' => 'Inquiries', 'label' => 'Allow approving inquiry responses'],
+        ['name' => 'inquiries.send', 'group' => 'Inquiries', 'label' => 'Allow sending approved inquiry responses'],
         ['name' => 'dictionaries.view', 'group' => 'Dictionaries', 'label' => 'Allow viewing dictionaries page'],
         ['name' => 'dictionaries.create', 'group' => 'Dictionaries', 'label' => 'Allow creating dictionary entries'],
         ['name' => 'dictionaries.update', 'group' => 'Dictionaries', 'label' => 'Allow editing dictionary entries'],
@@ -118,7 +117,8 @@ class RolesPermissionsController extends Controller
 
         $roles = Role::query()
             ->with('permissions:id,name')
-            ->orderByRaw("case when name = 'admin' then 0 when name = 'user' then 1 else 2 end")
+            ->where('name', '!=', 'user')
+            ->orderByRaw("case when name = 'admin' then 0 else 1 end")
             ->orderBy('name')
             ->get(['id', 'uuid', 'name', 'label_key', 'fallback_label', 'ai_description', 'is_protected'])
             ->map(fn (Role $role): array => [
@@ -133,8 +133,9 @@ class RolesPermissionsController extends Controller
                 'permissions' => $role->permissions->pluck('name')->values(),
             ]);
 
-        return Inertia::render('settings/RolesPermissions', [
-            'roles' => $roles,
+        return Inertia::render('Users', [
+            'initialTab' => 'roles',
+            'roleCatalog' => $roles,
             'permissions' => collect(self::SYSTEM_PERMISSIONS)
                 ->map(fn (array $permission): array => [
                     'name' => $permission['name'],
@@ -243,7 +244,7 @@ class RolesPermissionsController extends Controller
     private function isProtectedRole(Role $role): bool
     {
         return (bool) ($role->is_protected ?? false)
-            || in_array($role->name, ['admin', 'user'], true);
+            || $role->name === 'admin';
     }
 
     private function syncProtectedRolePermissions(): void

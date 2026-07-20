@@ -6,6 +6,7 @@ use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
+use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
 class SpecialistSeeder extends Seeder
@@ -15,6 +16,16 @@ class SpecialistSeeder extends Seeder
      */
     public function run(): void
     {
+        collect([
+            'inquiries.view',
+            'inquiries.view_all',
+            'inquiries.view_assigned',
+            'inquiries.assign',
+            'inquiries.respond',
+            'inquiries.approve',
+            'inquiries.send',
+        ])->each(fn (string $permission): Permission => Permission::findOrCreate($permission, 'web'));
+
         collect($this->roles())
             ->each(function (array $role): void {
                 $model = Role::firstOrCreate([
@@ -31,6 +42,8 @@ class SpecialistSeeder extends Seeder
                     'ai_description' => $role['ai_description'],
                     'is_protected' => false,
                 ])->save();
+
+                $model->givePermissionTo($this->workflowPermissions($model->name));
             });
 
         collect($this->specialists())
@@ -39,7 +52,6 @@ class SpecialistSeeder extends Seeder
                     ['email' => $specialist['email']],
                     [
                         'name' => $specialist['name'],
-                        'type' => 'system',
                         'status' => 'active',
                         'password' => Hash::make('password'),
                     ]
@@ -47,6 +59,28 @@ class SpecialistSeeder extends Seeder
 
                 $user->syncRoles([Role::findOrCreate($specialist['role'], 'web')]);
             });
+    }
+
+    /** @return array<int, string> */
+    private function workflowPermissions(string $role): array
+    {
+        if ($role === 'compliance_officer') {
+            return [
+                'inquiries.view',
+                'inquiries.view_all',
+                'inquiries.view_assigned',
+                'inquiries.assign',
+                'inquiries.respond',
+                'inquiries.approve',
+                'inquiries.send',
+            ];
+        }
+
+        if ($role === 'legal_counsel') {
+            return ['inquiries.view', 'inquiries.view_assigned', 'inquiries.respond', 'inquiries.approve'];
+        }
+
+        return ['inquiries.view', 'inquiries.view_assigned', 'inquiries.respond'];
     }
 
     /**

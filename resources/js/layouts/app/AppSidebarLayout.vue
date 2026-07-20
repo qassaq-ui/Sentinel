@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import AppContent from '@/components/AppContent.vue';
-import AIAssistantWidget from '@/components/AIAssistantWidget.vue';
 import AppShell from '@/components/AppShell.vue';
 import AppSidebar from '@/components/AppSidebar.vue';
 import AppSidebarHeader from '@/components/AppSidebarHeader.vue';
@@ -23,7 +22,6 @@ withDefaults(defineProps<Props>(), {
             <AppSidebarHeader :breadcrumbs="breadcrumbs" />
             <slot />
         </AppContent>
-        <AIAssistantWidget />
         <Toaster />
     </AppShell>
 </template>

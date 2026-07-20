@@ -300,16 +300,6 @@ onBeforeUnmount(() => {
                 </div>
             </div>
 
-            <div class="mt-3 ml-11 flex items-center gap-2 text-muted-foreground">
-                <button
-                    type="button"
-                    class="inline-flex size-7 items-center justify-center rounded-md transition-colors hover:bg-muted hover:text-foreground"
-                    :aria-label="t('Copy')"
-                >
-                    <Copy class="size-4" />
-                </button>
-            </div>
-
             <div
                 v-for="(conversationMessage, index) in conversationMessages"
                 :key="`${conversationMessage.role}-${index}`"

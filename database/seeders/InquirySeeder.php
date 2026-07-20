@@ -6,10 +6,8 @@ use App\Actions\Inquiries\CreateInquiry;
 use App\Models\Inquiry;
 use App\Models\InquiryAttachment;
 use App\Models\InquiryCategory;
-use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 
 class InquirySeeder extends Seeder
@@ -28,13 +26,11 @@ class InquirySeeder extends Seeder
         }
 
         $categories = $this->categories();
-        $creators = $this->creators();
         $createInquiry = app(CreateInquiry::class);
 
         foreach ($this->records() as $index => $record) {
             $inquiry = $createInquiry->handle([
                 'category' => $categories[$record['category']],
-                'creator' => $record['anonymous'] ? null : $creators[$index % $creators->count()],
                 'title' => $record['title'],
                 'description' => $record['description'],
                 'anonymous' => $record['anonymous'],
@@ -46,6 +42,13 @@ class InquirySeeder extends Seeder
                 'status' => $record['status'],
                 'archived_at' => $record['archived'] ? Carbon::parse($record['submitted_at'])->addDays(3) : null,
             ])->save();
+
+            $inquiry->applicant()->create([
+                'name' => $record['anonymous'] ? null : 'Demo Applicant '.($index + 1),
+                'email' => $record['anonymous'] ? null : "applicant{$index}@example.test",
+                'phone' => null,
+                'tracking_token_hash' => hash('sha256', Str::random(48)),
+            ]);
         }
 
         $this->syncDemoAttachments();
@@ -264,29 +267,6 @@ class InquirySeeder extends Seeder
         ])->save();
 
         return $category;
-    }
-
-    /**
-     * @return Collection<int, User>
-     */
-    private function creators(): Collection
-    {
-        $creators = User::query()
-            ->where('type', 'regular')
-            ->orderBy('id')
-            ->limit(12)
-            ->get();
-
-        if ($creators->isNotEmpty()) {
-            return $creators;
-        }
-
-        return User::factory()
-            ->count(12)
-            ->create([
-                'type' => 'regular',
-                'status' => 'active',
-            ]);
     }
 
     /**

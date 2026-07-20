@@ -17,7 +17,6 @@ use Spatie\Permission\Traits\HasRoles;
  * @property int $id
  * @property string $name
  * @property string $email
- * @property string $type
  * @property string $status
  * @property Carbon|null $email_verified_at
  * @property string $password
@@ -28,7 +27,7 @@ use Spatie\Permission\Traits\HasRoles;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-#[Fillable(['name', 'email', 'type', 'status', 'password'])]
+#[Fillable(['name', 'email', 'status', 'password'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class User extends Authenticatable
 {

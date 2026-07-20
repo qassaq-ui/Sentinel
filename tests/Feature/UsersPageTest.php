@@ -10,9 +10,7 @@ use Spatie\Permission\Models\Role;
 
 function userWithUsersPermissions(array $permissions = []): User
 {
-    $permissionNames = array_values(array_unique(array_merge([
-        'users.view',
-    ], $permissions)));
+    $permissionNames = array_values(array_unique(array_merge(['users.view'], $permissions)));
 
     collect($permissionNames)->each(fn (string $permission): Permission => Permission::findOrCreate($permission));
 
@@ -23,104 +21,118 @@ function userWithUsersPermissions(array $permissions = []): User
 }
 
 test('guests are redirected from the users page to the login page', function () {
-    $response = $this->get(route('users.index'));
-
-    $response->assertRedirect(route('login'));
+    $this->get(route('users.index'))->assertRedirect(route('login'));
 });
 
-test('authenticated users can visit the users page', function () {
+test('authenticated employees can visit the users tab', function () {
+    $role = Role::create(['name' => 'manager', 'fallback_label' => 'Manager']);
     $user = userWithUsersPermissions();
-    $role = Role::create(['name' => 'manager']);
-
     $user->assignRole($role);
-
-    $response = $this
-        ->actingAs($user)
-        ->get(route('users.index'));
-
-    $response
-        ->assertOk()
-        ->assertInertia(fn (Assert $page) => $page
-            ->component('Users')
-            ->where('regularUsers.data.0.id', $user->id)
-            ->where('regularUsers.data.0.name', $user->name)
-            ->where('regularUsers.data.0.email', $user->email)
-            ->where('regularUsers.data.0.status', 'active')
-            ->where('regularUsers.data.0.roles.0', 'User')
-            ->where('systemUsers.data', [])
-            ->where('roles', function (Collection $roles) use ($role): bool {
-                return $roles->pluck('id')->contains($role->id);
-            })
-        );
-});
-
-test('database seeder creates system specialists for inquiry assignment', function () {
-    $this->seed(SpecialistSeeder::class);
-
-    $legal = User::query()->where('email', 'legal@speakup.test')->firstOrFail();
-    $hr = User::query()->where('email', 'hr@speakup.test')->firstOrFail();
-    $security = User::query()->where('email', 'economic.security@speakup.test')->firstOrFail();
-
-    expect($legal->type)->toBe('system')
-        ->and($legal->status)->toBe('active')
-        ->and($legal->hasRole('legal_counsel'))->toBeTrue()
-        ->and($hr->hasRole('hr_specialist'))->toBeTrue()
-        ->and($security->hasRole('economic_security_specialist'))->toBeTrue()
-        ->and(User::query()->whereIn('email', [
-            'legal@speakup.test',
-            'hr@speakup.test',
-            'compliance@speakup.test',
-            'ethics@speakup.test',
-            'security.investigations@speakup.test',
-            'physical.security@speakup.test',
-            'information.security@speakup.test',
-            'economic.security@speakup.test',
-            'safety@speakup.test',
-            'procurement.control@speakup.test',
-        ])->count())->toBe(10);
-});
-
-test('users page loads the first page of users for infinite scroll', function () {
-    Role::create(['name' => 'admin']);
-    $systemRole = Role::create(['name' => 'manager']);
-
-    User::factory()
-        ->count(51)
-        ->create([
-            'type' => 'regular',
-            'status' => 'active',
-        ]);
-
-    User::factory()
-        ->count(51)
-        ->create([
-            'type' => 'system',
-            'status' => 'active',
-        ])
-        ->each(fn (User $user) => $user->assignRole($systemRole));
-
-    $user = userWithUsersPermissions();
 
     $this
         ->actingAs($user)
         ->get(route('users.index'))
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
-            ->has('regularUsers.data', 50)
-            ->has('systemUsers.data', 50)
+            ->component('Users')
+            ->where('initialTab', 'users')
+            ->where('users.data.0.id', $user->id)
+            ->where('users.data.0.name', $user->name)
+            ->where('users.data.0.email', $user->email)
+            ->where('users.data.0.status', 'active')
+            ->where('users.data.0.roles.0', 'Manager')
+            ->where('assignableRoles', function (Collection $roles) use ($role): bool {
+                return $roles->pluck('id')->contains($role->id)
+                    && ! $roles->pluck('name')->contains('user');
+            })
         );
+});
+
+test('roles and permissions are rendered as the second users page tab', function () {
+    Permission::findOrCreate('roles.view');
+    $user = User::factory()->create();
+    $user->givePermissionTo('roles.view');
 
     $this
         ->actingAs($user)
-        ->get(route('users.index', [
-            'regularUsers' => 2,
-            'systemUsers' => 2,
-        ]))
+        ->get(route('roles-permissions.index'))
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
-            ->has('regularUsers.data', 2)
-            ->has('systemUsers.data', 1)
+            ->component('Users')
+            ->where('initialTab', 'roles')
+            ->where('roleCatalog.0.name', 'admin')
+            ->where('roleCatalog.0.protected', true)
+            ->has('permissions', 23)
+            ->missing('users')
         );
+});
+
+test('users tabs preserve inertia state and use the shared segmented style', function () {
+    $usersPage = file_get_contents(resource_path('js/pages/Users.vue'));
+    $usersTable = file_get_contents(resource_path('js/pages/users/UsersTable.vue'));
+    $roles = file_get_contents(resource_path('js/pages/settings/roles-permissions/RolesList.vue'));
+    $permissions = file_get_contents(resource_path('js/pages/settings/roles-permissions/PermissionsList.vue'));
+
+    expect($usersPage)
+        ->toContain('preserve-state')
+        ->toContain("@click=\"activeTab = 'users'\"")
+        ->toContain("@click=\"activeTab = 'roles'\"")
+        ->toContain('bg-white text-[#1d1d1f]')
+        ->not->toContain('translateX(${activeTab')
+        ->and($usersTable)
+        ->toContain('bg-[#f7f7f8]')
+        ->not->toContain('rounded-lg border border-border')
+        ->and($roles)
+        ->toContain('border-y border-black/8 bg-[#f7f7f8]')
+        ->and($permissions)
+        ->toContain('border-y border-black/8 bg-[#f7f7f8]');
+});
+
+test('roles tab displays a matching skeleton while its content loads', function () {
+    $usersPage = file_get_contents(resource_path('js/pages/Users.vue'));
+    $skeleton = file_get_contents(resource_path(
+        'js/pages/settings/roles-permissions/RolesPermissionsSkeleton.vue',
+    ));
+
+    expect($usersPage)
+        ->toContain('<RolesPermissionsSkeleton v-if="isRolesLoading" />')
+        ->toContain('showRolesSkeleton()')
+        ->and($skeleton)
+        ->toContain('v-for="role in 6"')
+        ->toContain('v-for="group in 3"');
+});
+
+test('database seeder creates employees for inquiry assignment', function () {
+    $this->seed(SpecialistSeeder::class);
+
+    $legal = User::query()->where('email', 'legal@speakup.test')->firstOrFail();
+    $hr = User::query()->where('email', 'hr@speakup.test')->firstOrFail();
+
+    expect($legal->status)->toBe('active')
+        ->and($legal->hasRole('legal_counsel'))->toBeTrue()
+        ->and($hr->hasRole('hr_specialist'))->toBeTrue()
+        ->and(User::query()->count())->toBe(10);
+});
+
+test('users page paginates employees for infinite scroll', function () {
+    $role = Role::create(['name' => 'manager']);
+
+    User::factory()
+        ->count(51)
+        ->create()
+        ->each(fn (User $user) => $user->assignRole($role));
+
+    $user = userWithUsersPermissions();
+
+    $this
+        ->actingAs($user)
+        ->get(route('users.index'))
+        ->assertInertia(fn (Assert $page) => $page->has('users.data', 50));
+
+    $this
+        ->actingAs($user)
+        ->get(route('users.index', ['users' => 2]))
+        ->assertInertia(fn (Assert $page) => $page->has('users.data', 2));
 });
 
 test('users page falls back to the first page when an infinite scroll page is out of range', function () {
@@ -128,146 +140,84 @@ test('users page falls back to the first page when an infinite scroll page is ou
 
     $this
         ->actingAs($user)
-        ->get(route('users.index', [
-            'regularUsers' => 2,
-        ]))
-        ->assertOk()
+        ->get(route('users.index', ['users' => 2]))
         ->assertInertia(fn (Assert $page) => $page
-            ->has('regularUsers.data', 1)
-            ->where('regularUsers.data.0.id', $user->id)
+            ->has('users.data', 1)
+            ->where('users.data.0.id', $user->id)
         );
 });
 
-test('authenticated users can create portal users', function () {
-    $user = userWithUsersPermissions(['users.create']);
-
-    $this
-        ->actingAs($user)
-        ->post(route('users.store'), [
-            'type' => 'regular',
-            'name' => 'Ivan Petrov',
-            'email' => 'ivan@example.com',
-            'password' => 'generated-password',
-        ])
-        ->assertRedirect(route('users.index'));
-
-    $createdUser = User::where('email', 'ivan@example.com')->firstOrFail();
-
-    expect($createdUser->type)->toBe('regular')
-        ->and($createdUser->status)->toBe('active')
-        ->and(Hash::check('generated-password', $createdUser->password))->toBeTrue()
-        ->and($createdUser->hasRole('user'))->toBeTrue();
-});
-
-test('authenticated users can create system accounts', function () {
-    $user = userWithUsersPermissions(['users.create']);
+test('authorized employees can create staff accounts with a role', function () {
+    $admin = userWithUsersPermissions(['users.create']);
     $role = Role::create(['name' => 'manager']);
 
     $this
-        ->actingAs($user)
+        ->actingAs($admin)
         ->post(route('users.store'), [
-            'type' => 'system',
-            'name' => 'Integration Bot',
-            'email' => 'integration@example.com',
+            'name' => 'Ivan Petrov',
+            'email' => 'ivan@example.com',
             'password' => 'generated-password',
             'role_id' => $role->id,
         ])
         ->assertRedirect(route('users.index'));
 
-    $this
-        ->actingAs($user)
-        ->get(route('users.index'))
-        ->assertOk()
-        ->assertInertia(fn (Assert $page) => $page
-            ->where('systemUsers.data.0.name', 'Integration Bot')
-            ->where('systemUsers.data.0.email', 'integration@example.com')
-            ->where('regularUsers.data.0.id', $user->id)
-        );
+    $createdUser = User::query()->where('email', 'ivan@example.com')->firstOrFail();
+
+    expect($createdUser->status)->toBe('active')
+        ->and(Hash::check('generated-password', $createdUser->password))->toBeTrue()
+        ->and($createdUser->hasRole($role))->toBeTrue();
 });
 
-test('authenticated users can update users and move them between account types', function () {
+test('authorized employees can update staff accounts and roles', function () {
     $admin = userWithUsersPermissions(['users.update']);
-    $user = User::factory()->create([
-        'type' => 'regular',
-        'status' => 'active',
-        'password' => 'current-password',
-    ]);
-    $userRole = Role::create(['name' => 'user']);
-    $systemRole = Role::create(['name' => 'system']);
-
-    $user->assignRole($userRole);
+    $oldRole = Role::create(['name' => 'reviewer']);
+    $newRole = Role::create(['name' => 'manager']);
+    $user = User::factory()->create(['password' => 'current-password']);
+    $user->assignRole($oldRole);
 
     $this
         ->actingAs($admin)
         ->patch(route('users.update', $user), [
-            'type' => 'system',
             'status' => 'blocked',
-            'name' => 'System Integration',
-            'email' => 'system@example.com',
+            'name' => 'Updated Employee',
+            'email' => 'updated@example.com',
             'password' => '',
-            'role_id' => $systemRole->id,
+            'role_id' => $newRole->id,
         ])
         ->assertRedirect(route('users.index'));
 
     $user->refresh();
 
-    expect($user->type)->toBe('system')
-        ->and($user->status)->toBe('blocked')
-        ->and($user->name)->toBe('System Integration')
-        ->and($user->email)->toBe('system@example.com')
+    expect($user->status)->toBe('blocked')
+        ->and($user->name)->toBe('Updated Employee')
         ->and(Hash::check('current-password', $user->password))->toBeTrue()
-        ->and($user->hasRole($systemRole))->toBeTrue()
-        ->and($user->hasRole($userRole))->toBeFalse();
-
-    $this
-        ->actingAs($admin)
-        ->get(route('users.index'))
-        ->assertOk()
-        ->assertInertia(fn (Assert $page) => $page
-            ->where('systemUsers.data.0.id', $user->id)
-            ->where('systemUsers.data.0.type', 'system')
-            ->where('systemUsers.data.0.status', 'blocked')
-            ->where('regularUsers.data.0.id', $admin->id)
-        );
+        ->and($user->hasRole($newRole))->toBeTrue()
+        ->and($user->hasRole($oldRole))->toBeFalse();
 });
 
-test('authenticated users can block and unblock users', function () {
+test('authorized employees can block and unblock staff accounts', function () {
     $admin = userWithUsersPermissions(['users.update']);
-    $user = User::factory()->create([
-        'type' => 'regular',
-        'status' => 'active',
-    ]);
+    $role = Role::create(['name' => 'manager']);
+    $user = User::factory()->create();
+    $user->assignRole($role);
 
-    $this
-        ->actingAs($admin)
-        ->patch(route('users.update', $user), [
-            'type' => 'regular',
-            'status' => 'blocked',
-            'name' => $user->name,
-            'email' => $user->email,
-            'password' => '',
-            'role_id' => null,
-        ])
-        ->assertRedirect(route('users.index'));
+    foreach (['blocked', 'active'] as $status) {
+        $this
+            ->actingAs($admin)
+            ->patch(route('users.update', $user), [
+                'status' => $status,
+                'name' => $user->name,
+                'email' => $user->email,
+                'password' => '',
+                'role_id' => $role->id,
+            ])
+            ->assertRedirect(route('users.index'));
 
-    expect($user->fresh()->status)->toBe('blocked');
-
-    $this
-        ->actingAs($admin)
-        ->patch(route('users.update', $user), [
-            'type' => 'regular',
-            'status' => 'active',
-            'name' => $user->name,
-            'email' => $user->email,
-            'password' => '',
-            'role_id' => null,
-        ])
-        ->assertRedirect(route('users.index'));
-
-    expect($user->fresh()->status)->toBe('active');
+        expect($user->fresh()->status)->toBe($status);
+    }
 });
 
-test('authenticated users can delete users', function () {
+test('authorized employees can delete staff accounts', function () {
     $admin = userWithUsersPermissions(['users.delete']);
     $user = User::factory()->create();
 
@@ -279,32 +229,26 @@ test('authenticated users can delete users', function () {
     $this->assertModelMissing($user);
 });
 
-test('user creation validates required fields', function () {
-    $user = userWithUsersPermissions(['users.create']);
-
-    $this
-        ->actingAs($user)
-        ->post(route('users.store'), [
-            'type' => 'external',
-            'name' => '',
-            'email' => 'not-an-email',
-            'password' => 'short',
-        ])
-        ->assertSessionHasErrors(['type', 'name', 'email', 'password']);
-});
-
-test('user update validates required fields', function () {
-    $admin = userWithUsersPermissions(['users.update']);
+test('staff account creation and update require valid data and a role', function () {
+    $admin = userWithUsersPermissions(['users.create', 'users.update']);
     $user = User::factory()->create();
 
     $this
         ->actingAs($admin)
+        ->post(route('users.store'), [
+            'name' => '',
+            'email' => 'not-an-email',
+            'password' => 'short',
+        ])
+        ->assertSessionHasErrors(['name', 'email', 'password', 'role_id']);
+
+    $this
+        ->actingAs($admin)
         ->patch(route('users.update', $user), [
-            'type' => 'external',
             'status' => 'unknown',
             'name' => '',
             'email' => 'not-an-email',
             'password' => 'short',
         ])
-        ->assertSessionHasErrors(['type', 'status', 'name', 'email', 'password']);
+        ->assertSessionHasErrors(['status', 'name', 'email', 'password', 'role_id']);
 });

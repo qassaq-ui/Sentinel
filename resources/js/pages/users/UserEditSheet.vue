@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useForm } from '@inertiajs/vue3';
 import { RefreshCw } from '@lucide/vue';
-import { computed, watch } from 'vue';
+import { watch } from 'vue';
 import InputError from '@/components/InputError.vue';
 import PasswordInput from '@/components/PasswordInput.vue';
 import { Button } from '@/components/ui/button';
@@ -41,18 +41,12 @@ const emit = defineEmits<{
 
 const { t } = useTranslations();
 const form = useForm({
-    type: 'regular',
     status: 'active',
     name: '',
     email: '',
     password: '',
     role_id: 'none',
 });
-
-const userRole = computed(() => props.roles.find((role) => role.name === 'user') ?? null);
-const systemRoles = computed(() => props.roles.filter((role) => role.name !== 'user'));
-const firstSystemRole = computed(() => systemRoles.value[0] ?? null);
-const isSystemAccount = computed(() => form.type === 'system');
 
 watch(
     () => props.user,
@@ -62,7 +56,6 @@ watch(
         }
 
         form.defaults({
-            type: user.type,
             status: user.status,
             name: user.name,
             email: user.email,
@@ -72,33 +65,9 @@ watch(
         form.reset();
         form.clearErrors();
 
-        if (user.type === 'regular' && userRole.value) {
-            form.role_id = String(userRole.value.id);
-        }
-
-        if (user.type === 'system' && firstSystemRole.value) {
-            form.role_id =
-                user.role_id && systemRoles.value.some((role) => role.id === user.role_id)
-                    ? String(user.role_id)
-                    : String(firstSystemRole.value.id);
-        }
+        form.role_id = String(user.role_id ?? props.roles[0]?.id ?? '');
     },
     { immediate: true },
-);
-
-watch(
-    () => form.type,
-    (type) => {
-        if (type === 'regular' && userRole.value) {
-            form.role_id = String(userRole.value.id);
-        }
-
-        if (type === 'system' && firstSystemRole.value) {
-            if (form.role_id === 'none' || form.role_id === String(userRole.value?.id ?? '')) {
-                form.role_id = String(firstSystemRole.value.id);
-            }
-        }
-    },
 );
 
 function generatePassword() {
@@ -118,19 +87,17 @@ function saveUser() {
         return;
     }
 
-    form
-        .transform((data) => ({
-            ...data,
-            password: data.password || null,
-            role_id: data.role_id === 'none' ? null : Number(data.role_id),
-        }))
-        .patch(updateUser(props.user.id).url, {
-            preserveScroll: true,
-            onSuccess: () => {
-                form.clearErrors();
-                emit('update:open', false);
-            },
-        });
+    form.transform((data) => ({
+        ...data,
+        password: data.password || null,
+        role_id: Number(data.role_id),
+    })).patch(updateUser(props.user.id).url, {
+        preserveScroll: true,
+        onSuccess: () => {
+            form.clearErrors();
+            emit('update:open', false);
+        },
+    });
 }
 </script>
 
@@ -144,29 +111,16 @@ function saveUser() {
                 </SheetDescription>
             </SheetHeader>
 
-            <form class="flex min-h-0 flex-1 flex-col" @submit.prevent="saveUser">
+            <form
+                class="flex min-h-0 flex-1 flex-col"
+                @submit.prevent="saveUser"
+            >
                 <div class="min-h-0 flex-1 overflow-y-auto px-6 py-5">
                     <div class="grid gap-5 md:grid-cols-2">
                         <div class="grid gap-2 md:col-span-2">
-                            <Label for="edit-user-type">{{ t('User type') }}</Label>
-                            <Select v-model="form.type">
-                                <SelectTrigger id="edit-user-type" class="w-full">
-                                    <SelectValue :placeholder="t('Select user type')" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="regular">
-                                        {{ t('Regular user') }}
-                                    </SelectItem>
-                                    <SelectItem value="system">
-                                        {{ t('System user') }}
-                                    </SelectItem>
-                                </SelectContent>
-                            </Select>
-                            <InputError :message="form.errors.type" />
-                        </div>
-
-                        <div class="grid gap-2 md:col-span-2">
-                            <Label for="edit-user-name">{{ t('Full name') }}</Label>
+                            <Label for="edit-user-name">{{
+                                t('Full name')
+                            }}</Label>
                             <Input
                                 id="edit-user-name"
                                 v-model="form.name"
@@ -177,7 +131,9 @@ function saveUser() {
                         </div>
 
                         <div class="grid gap-2 md:col-span-2">
-                            <Label for="edit-user-email">{{ t('Email') }}</Label>
+                            <Label for="edit-user-email">{{
+                                t('Email')
+                            }}</Label>
                             <Input
                                 id="edit-user-email"
                                 v-model="form.email"
@@ -189,14 +145,22 @@ function saveUser() {
                         </div>
 
                         <div class="grid gap-2 md:col-span-2">
-                            <Label for="edit-user-password">{{ t('Password') }}</Label>
-                            <div class="grid grid-cols-[minmax(0,1fr)_2.25rem] gap-2">
+                            <Label for="edit-user-password">{{
+                                t('Password')
+                            }}</Label>
+                            <div
+                                class="grid grid-cols-[minmax(0,1fr)_2.25rem] gap-2"
+                            >
                                 <PasswordInput
                                     id="edit-user-password"
                                     v-model="form.password"
                                     name="password"
                                     autocomplete="new-password"
-                                    :placeholder="t('Leave empty to keep current password')"
+                                    :placeholder="
+                                        t(
+                                            'Leave empty to keep current password',
+                                        )
+                                    "
                                 />
                                 <Button
                                     type="button"
@@ -214,10 +178,17 @@ function saveUser() {
 
                         <div class="grid gap-5 md:col-span-2 md:grid-cols-2">
                             <div class="grid gap-2">
-                                <Label for="edit-user-status">{{ t('Status') }}</Label>
+                                <Label for="edit-user-status">{{
+                                    t('Status')
+                                }}</Label>
                                 <Select v-model="form.status">
-                                    <SelectTrigger id="edit-user-status" class="w-full">
-                                        <SelectValue :placeholder="t('Status')" />
+                                    <SelectTrigger
+                                        id="edit-user-status"
+                                        class="w-full"
+                                    >
+                                        <SelectValue
+                                            :placeholder="t('Status')"
+                                        />
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="active">
@@ -232,30 +203,29 @@ function saveUser() {
                             </div>
 
                             <div class="grid gap-2">
-                                <Label for="edit-user-role">{{ t('Role') }}</Label>
-                                <template v-if="isSystemAccount">
-                                    <Select v-model="form.role_id">
-                                        <SelectTrigger id="edit-user-role" class="w-full">
-                                            <SelectValue :placeholder="t('Select role')" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem
-                                                v-for="role in systemRoles"
-                                                :key="role.id"
-                                                :value="String(role.id)"
-                                            >
-                                                {{ role.label }}
-                                            </SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                    <InputError :message="form.errors.role_id" />
-                                </template>
-                                <div
-                                    v-else
-                                    class="rounded-md border border-border bg-muted/40 px-3 py-2 text-sm font-medium"
-                                >
-                                    {{ t('User') }}
-                                </div>
+                                <Label for="edit-user-role">{{
+                                    t('Role')
+                                }}</Label>
+                                <Select v-model="form.role_id">
+                                    <SelectTrigger
+                                        id="edit-user-role"
+                                        class="w-full"
+                                    >
+                                        <SelectValue
+                                            :placeholder="t('Select role')"
+                                        />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem
+                                            v-for="role in roles"
+                                            :key="role.id"
+                                            :value="String(role.id)"
+                                        >
+                                            {{ role.label }}
+                                        </SelectItem>
+                                    </SelectContent>
+                                </Select>
+                                <InputError :message="form.errors.role_id" />
                             </div>
                         </div>
                     </div>

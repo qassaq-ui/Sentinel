@@ -7,8 +7,97 @@ use App\Models\InquiryCategory;
 use App\Models\User;
 use Database\Seeders\InquirySeeder;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 use Inertia\Testing\AssertableInertia as Assert;
+use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
+
+test('inquiry statuses render as colored text without badges', function () {
+    $summary = file_get_contents(resource_path('js/pages/Inquiries/InquiryDetailSummary.vue'));
+    $table = file_get_contents(resource_path('js/pages/Inquiries/InquiriesTable.vue'));
+    $status = file_get_contents(resource_path('js/pages/Inquiries/InquiryStatusBadge.vue'));
+
+    expect($summary)
+        ->toContain('appearance="text"')
+        ->and($table)
+        ->toContain('appearance="text"')
+        ->and($status)
+        ->toContain("appearance?: 'badge' | 'text'")
+        ->toContain("appearance === 'text'")
+        ->toContain("v-if=\"appearance === 'badge'\"");
+});
+
+test('the internal inquiries page uses the refined apple style', function () {
+    $page = file_get_contents(resource_path('js/pages/Inquiries.vue'));
+    $tabs = file_get_contents(resource_path('js/pages/Inquiries/InquiryTabs.vue'));
+    $search = file_get_contents(resource_path('js/pages/Inquiries/InquirySearchBar.vue'));
+    $filters = file_get_contents(resource_path('js/pages/Inquiries/InquiryFilters.vue'));
+    $table = file_get_contents(resource_path('js/pages/Inquiries/InquiriesTable.vue'));
+
+    expect($page)
+        ->toContain('bg-white text-[#1d1d1f]')
+        ->toContain('border-y border-black/8')
+        ->not->toContain('max-w-[1600px]')
+        ->and($tabs)
+        ->toContain('bg-white text-[#1d1d1f]')
+        ->not->toContain('activeTabIndex')
+        ->toContain('[scrollbar-width:none]')
+        ->and($search)
+        ->toContain('h-10 rounded-[10px]')
+        ->toContain('focus-visible:ring-[#007aff]/20')
+        ->and($filters)
+        ->toContain('border-t border-black/8')
+        ->and($table)
+        ->toContain('bg-[#f7f7f8]')
+        ->not->toContain('rounded-2xl border border-black/6 bg-white')
+        ->toContain('min-w-[920px]')
+        ->toContain('hover:bg-[#f7f7f8]');
+});
+
+test('internal segmented tabs use the same neutral active style', function () {
+    $dictionaries = file_get_contents(resource_path('js/pages/Dictionaries.vue'));
+    $detailTabs = file_get_contents(resource_path('js/pages/Inquiries/InquiryDetailTabs.vue'));
+    $tabsList = file_get_contents(resource_path('js/components/ui/tabs/TabsList.vue'));
+    $tabsTrigger = file_get_contents(resource_path('js/components/ui/tabs/TabsTrigger.vue'));
+    $appearanceTabs = file_get_contents(resource_path('js/components/AppearanceTabs.vue'));
+
+    expect($dictionaries)
+        ->toContain('bg-white text-[#1d1d1f]')
+        ->not->toContain("'translate-x-full': activeTab")
+        ->and($detailTabs)
+        ->toContain('bg-white text-[#1d1d1f]')
+        ->not->toContain('activeIndex')
+        ->and($tabsList)
+        ->toContain('bg-black/[0.055]')
+        ->and($tabsTrigger)
+        ->toContain('data-[state=active]:bg-white')
+        ->not->toContain('data-[state=active]:scale')
+        ->and($appearanceTabs)
+        ->toContain('bg-white text-[#1d1d1f]')
+        ->not->toContain('bg-[var(--color-tab)] text-white');
+});
+
+test('inquiry detail uses the same flat internal page shell', function () {
+    $page = file_get_contents(resource_path('js/pages/Inquiries/Show.vue'));
+    $summary = file_get_contents(resource_path('js/pages/Inquiries/InquiryDetailSummary.vue'));
+    $description = file_get_contents(resource_path('js/pages/Inquiries/InquiryDescriptionPanel.vue'));
+    $history = file_get_contents(resource_path('js/pages/Inquiries/InquiryHistoryTimeline.vue'));
+    $response = file_get_contents(resource_path('js/pages/Inquiries/InquiryResponsePanel.vue'));
+
+    expect($page)
+        ->toContain('bg-white text-[#1d1d1f]')
+        ->toContain('text-[1.75rem]')
+        ->toContain('scroll-region')
+        ->and($summary)
+        ->toContain('border-y border-black/8 bg-[#f7f7f8]')
+        ->not->toContain('rounded-lg bg-muted/60')
+        ->and($description)
+        ->toContain('border-y border-black/8 bg-[#f7f7f8]')
+        ->and($history)
+        ->toContain('border-y border-black/8 bg-[#f7f7f8]')
+        ->and($response)
+        ->toContain('border-y border-black/8 bg-[#f7f7f8]');
+});
 
 test('guests are redirected from the inquiries page to the login page', function () {
     $response = $this->get(route('inquiries.index'));
@@ -16,10 +105,10 @@ test('guests are redirected from the inquiries page to the login page', function
     $response->assertRedirect(route('login'));
 });
 
-test('guests are redirected from the create inquiry page to the login page', function () {
-    $response = $this->get(route('inquiries.create'));
+test('guests can visit the public inquiry page without authentication', function () {
+    $response = $this->get(route('home'));
 
-    $response->assertRedirect(route('login'));
+    $response->assertOk();
 });
 
 test('guests are redirected from the inquiry detail page to the login page', function () {
@@ -83,8 +172,12 @@ test('authenticated users can visit the inquiry detail page', function () {
     $assignee = User::factory()->create([
         'name' => 'Compliance Officer',
         'email' => 'compliance@example.com',
-        'type' => 'system',
         'status' => 'active',
+    ]);
+    $assignee->givePermissionTo([
+        Permission::findOrCreate('inquiries.view'),
+        Permission::findOrCreate('inquiries.view_assigned'),
+        Permission::findOrCreate('inquiries.respond'),
     ]);
     $assignee->assignRole(Role::create([
         'name' => 'compliance',
@@ -161,11 +254,14 @@ test('authenticated users can visit the inquiry detail page', function () {
             ->where('inquiry.attachments.0.sizeBytes', 98304)
             ->where('inquiry.attachments.1.originalName', 'inspection-notes.pdf')
             ->where('inquiry.attachments.1.fileType', InquiryAttachment::TYPE_PDF)
-            ->where('inquiry.historyCount', 2)
-            ->has('systemUsers', 1)
-            ->where('systemUsers.0.id', $assignee->id)
-            ->where('systemUsers.0.name', 'Compliance Officer')
-            ->where('systemUsers.0.role', 'Compliance')
+            ->where('inquiry.historyCount', 1)
+            ->has('inquiry.history', 1)
+            ->where('inquiry.history.0.type', 'inquiry_created')
+            ->where('systemUsers', fn (Collection $users): bool => $users->contains(
+                fn (array $systemUser): bool => $systemUser['id'] === $assignee->id
+                    && $systemUser['name'] === 'Compliance Officer'
+                    && $systemUser['role'] === 'Compliance'
+            ))
             ->has('categories', 1)
             ->where('categories.0.id', $category->id)
             ->where('categories.0.name', 'Безопасность и охрана труда')
@@ -207,13 +303,18 @@ test('authenticated users can change an inquiry category and review deadline', f
 });
 
 test('authenticated users can assign an active system user as inquiry executor', function () {
-    $user = inquiryUser(['inquiries.view', 'inquiries.update']);
+    $user = inquiryUser(['inquiries.view', 'inquiries.assign']);
     $assignee = User::factory()->create([
-        'type' => 'system',
         'status' => 'active',
+    ]);
+    $assignee->givePermissionTo([
+        Permission::findOrCreate('inquiries.view'),
+        Permission::findOrCreate('inquiries.view_assigned'),
+        Permission::findOrCreate('inquiries.respond'),
     ]);
     $inquiry = Inquiry::factory()->create([
         'assigned_to_id' => null,
+        'status' => Inquiry::STATUS_NEW,
     ]);
 
     $this
@@ -227,13 +328,13 @@ test('authenticated users can assign an active system user as inquiry executor',
 });
 
 test('authenticated users can unassign an inquiry executor', function () {
-    $user = inquiryUser(['inquiries.view', 'inquiries.update']);
+    $user = inquiryUser(['inquiries.view', 'inquiries.assign']);
     $assignee = User::factory()->create([
-        'type' => 'system',
         'status' => 'active',
     ]);
     $inquiry = Inquiry::factory()->create([
         'assigned_to_id' => $assignee->id,
+        'status' => Inquiry::STATUS_IN_PROGRESS,
     ]);
 
     $this
@@ -246,20 +347,75 @@ test('authenticated users can unassign an inquiry executor', function () {
     expect($inquiry->fresh()->assigned_to_id)->toBeNull();
 });
 
-test('regular users cannot be assigned as inquiry executors', function () {
-    $user = inquiryUser(['inquiries.view', 'inquiries.update']);
-    $regularUser = User::factory()->create([
-        'type' => 'regular',
-        'status' => 'active',
+test('completed archived inquiries cannot be reassigned', function () {
+    $user = inquiryUser(['inquiries.view', 'inquiries.assign']);
+    $currentAssignee = User::factory()->create();
+    $nextAssignee = User::factory()->create(['status' => 'active']);
+    $nextAssignee->givePermissionTo([
+        Permission::findOrCreate('inquiries.view'),
+        Permission::findOrCreate('inquiries.view_assigned'),
+        Permission::findOrCreate('inquiries.respond'),
     ]);
     $inquiry = Inquiry::factory()->create([
-        'assigned_to_id' => null,
+        'assigned_to_id' => $currentAssignee->id,
+        'status' => Inquiry::STATUS_COMPLETED,
+        'archived_at' => now(),
+    ]);
+
+    $this
+        ->actingAs($user)
+        ->get(route('inquiries.show', $inquiry))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('canAssignExecutor', false));
+
+    $this
+        ->actingAs($user)
+        ->patch(route('inquiries.assignee.update', $inquiry), [
+            'assigned_to_id' => $nextAssignee->id,
+        ])
+        ->assertForbidden();
+
+    expect($inquiry->fresh()->assigned_to_id)->toBe($currentAssignee->id)
+        ->and($inquiry->events()->count())->toBe(0);
+});
+
+test('manually archived inquiries cannot be reassigned', function () {
+    $user = inquiryUser(['inquiries.view', 'inquiries.assign']);
+    $currentAssignee = User::factory()->create();
+    $nextAssignee = User::factory()->create(['status' => 'active']);
+    $inquiry = Inquiry::factory()->create([
+        'assigned_to_id' => $currentAssignee->id,
+        'status' => Inquiry::STATUS_IN_PROGRESS,
+        'archived_at' => now(),
     ]);
 
     $this
         ->actingAs($user)
         ->patch(route('inquiries.assignee.update', $inquiry), [
-            'assigned_to_id' => $regularUser->id,
+            'assigned_to_id' => $nextAssignee->id,
+        ])
+        ->assertForbidden();
+
+    expect($inquiry->fresh()->assigned_to_id)->toBe($currentAssignee->id)
+        ->and($inquiry->events()->count())->toBe(0);
+});
+
+test('blocked employees cannot be assigned as inquiry executors', function () {
+    $user = inquiryUser(['inquiries.view', 'inquiries.assign']);
+    $blockedUser = User::factory()->create([
+        'status' => 'blocked',
+    ]);
+    $blockedUser->givePermissionTo(Permission::findOrCreate('inquiries.respond'));
+    $inquiry = Inquiry::factory()->create([
+        'assigned_to_id' => null,
+        'status' => Inquiry::STATUS_NEW,
+    ]);
+
+    $this
+        ->actingAs($user)
+        ->patch(route('inquiries.assignee.update', $inquiry), [
+            'assigned_to_id' => $blockedUser->id,
         ])
         ->assertInvalid(['assigned_to_id']);
 
@@ -319,6 +475,25 @@ test('the inquiries page paginates inquiry lists for infinite scroll', function 
         );
 });
 
+test('completed inquiries appear only in the archive', function () {
+    $user = inquiryUser(['inquiries.view']);
+    $completed = Inquiry::factory()->create([
+        'status' => Inquiry::STATUS_COMPLETED,
+        'archived_at' => null,
+    ]);
+
+    $this
+        ->actingAs($user)
+        ->get(route('inquiries.index'))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('allInquiries.data', [])
+            ->where('anonymousInquiries.data', [])
+            ->has('archivedInquiries.data', 1)
+            ->where('archivedInquiries.data.0.id', $completed->id)
+            ->where('archivedInquiries.data.0.archived', true));
+});
+
 test('inquiry category names are resolved from base locale json', function () {
     $user = inquiryUser(['inquiries.view']);
     $category = InquiryCategory::factory()->create([
@@ -373,14 +548,14 @@ test('seeded inquiry categories use english fallback and russian json translatio
         );
 });
 
-test('authenticated users can visit the create inquiry page', function () {
-    $user = inquiryUser(['inquiries.create']);
+test('authenticated employees can also visit the public inquiry page', function () {
+    $user = inquiryUser([]);
 
     $this
         ->actingAs($user)
-        ->get(route('inquiries.create'))
+        ->get(route('home'))
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
-            ->component('Inquiries/Create')
+            ->component('public/Inquiries/Create')
         );
 });

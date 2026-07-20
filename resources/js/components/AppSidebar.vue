@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Link } from '@inertiajs/vue3';
+import { Link, usePage } from '@inertiajs/vue3';
 import {
     BookOpen,
     FolderGit2,
@@ -10,7 +10,6 @@ import {
     Users,
 } from '@lucide/vue';
 import { computed } from 'vue';
-import { usePage } from '@inertiajs/vue3';
 import AppLogo from '@/components/AppLogo.vue';
 import NavFooter from '@/components/NavFooter.vue';
 import NavMain from '@/components/NavMain.vue';
@@ -28,6 +27,7 @@ import { useTranslations } from '@/composables/useTranslations';
 import { dashboard } from '@/routes';
 import { index as dictionariesIndex } from '@/routes/dictionaries';
 import { index as inquiriesIndex } from '@/routes/inquiries';
+import { index as rolesIndex } from '@/routes/roles-permissions';
 import { index as settingsIndex } from '@/routes/settings';
 import { index as usersIndex } from '@/routes/users';
 import type { NavItem } from '@/types';
@@ -45,39 +45,39 @@ const mainNavItems = computed<NavItem[]>(() => [
     },
     ...(can.value.inquiriesView
         ? [
-                {
-                    title: t('Inquiries'),
-                    href: inquiriesIndex(),
-                    icon: Inbox,
-                },
-            ]
+              {
+                  title: t('Inquiries'),
+                  href: inquiriesIndex(),
+                  icon: Inbox,
+              },
+          ]
         : []),
     ...(can.value.dictionariesView
         ? [
-                {
-                    title: t('Dictionaries'),
-                    href: dictionariesIndex(),
-                    icon: LibraryBig,
-                },
-            ]
+              {
+                  title: t('Dictionaries'),
+                  href: dictionariesIndex(),
+                  icon: LibraryBig,
+              },
+          ]
         : []),
-    ...(can.value.usersView
+    ...(can.value.usersView || can.value.rolesView
         ? [
-                {
-                    title: t('Users'),
-                    href: usersIndex(),
-                    icon: Users,
-                },
-            ]
+              {
+                  title: t('Users'),
+                  href: can.value.usersView ? usersIndex() : rolesIndex(),
+                  icon: Users,
+              },
+          ]
         : []),
     ...(can.value.settingsAccess
         ? [
-                {
-                    title: t('Settings'),
-                    href: settingsIndex(),
-                    icon: Settings,
-                },
-            ]
+              {
+                  title: t('Settings'),
+                  href: settingsIndex(),
+                  icon: Settings,
+              },
+          ]
         : []),
 ]);
 

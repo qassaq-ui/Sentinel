@@ -53,6 +53,12 @@ function something()
 
 function inquiryUser(array $permissions): User
 {
+    if (in_array('inquiries.view', $permissions, true)
+        && ! in_array('inquiries.view_all', $permissions, true)
+        && ! in_array('inquiries.view_assigned', $permissions, true)) {
+        $permissions[] = 'inquiries.view_all';
+    }
+
     collect($permissions)->each(fn (string $permission): Permission => Permission::findOrCreate($permission));
 
     $user = User::factory()->create();

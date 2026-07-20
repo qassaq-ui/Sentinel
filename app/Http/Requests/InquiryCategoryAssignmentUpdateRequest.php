@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Inquiry;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -13,7 +14,10 @@ class InquiryCategoryAssignmentUpdateRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return true;
+        $inquiry = $this->route('inquiry');
+
+        return $inquiry instanceof Inquiry
+            && $this->user()?->can('update', $inquiry) === true;
     }
 
     /**

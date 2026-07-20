@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { useTranslations } from '@/composables/useTranslations';
 import { computed } from 'vue';
+import { useTranslations } from '@/composables/useTranslations';
 import InquiryDateFilter from './InquiryDateFilter.vue';
 import InquiryFilterSelect from './InquiryFilterSelect.vue';
 import type { InquiryCategory, InquiryFilterOption } from './types';
@@ -58,8 +58,10 @@ const sortOptions: InquiryFilterOption[] = [
 </script>
 
 <template>
-    <div class="rounded-lg border border-border bg-background p-3">
-        <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+    <div
+        class="border-t border-black/8 bg-[#f7f7f8] px-4 py-4 sm:px-6 lg:px-8 dark:border-white/10 dark:bg-white/[0.035]"
+    >
+        <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
             <InquiryFilterSelect
                 :label="t('New / old')"
                 :model-value="age"

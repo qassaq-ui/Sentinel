@@ -20,9 +20,9 @@ class UsersController extends Controller
     public function index(): Response
     {
         return Inertia::render('Users', [
-            'regularUsers' => Inertia::scroll($this->usersByType('regular', 'regularUsers')),
-            'systemUsers' => Inertia::scroll($this->usersByType('system', 'systemUsers')),
-            'roles' => $this->roles(),
+            'initialTab' => 'users',
+            'users' => Inertia::scroll($this->users()),
+            'assignableRoles' => $this->roles(),
         ]);
     }
 
@@ -31,13 +31,12 @@ class UsersController extends Controller
         $validated = $request->validated();
 
         $user = User::create([
-            'type' => $validated['type'],
             'name' => $validated['name'],
             'email' => $validated['email'],
             'password' => $validated['password'],
         ]);
 
-        $user->syncRoles([$this->assignedRole($validated['type'], $validated['role_id'] ?? null)]);
+        $user->syncRoles([Role::findById((int) $validated['role_id'])]);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('User created.')]);
 
@@ -49,7 +48,6 @@ class UsersController extends Controller
         $validated = $request->validated();
 
         $user->fill([
-            'type' => $validated['type'],
             'status' => $validated['status'],
             'name' => $validated['name'],
             'email' => $validated['email'],
@@ -61,7 +59,7 @@ class UsersController extends Controller
 
         $user->save();
 
-        $user->syncRoles([$this->assignedRole($validated['type'], $validated['role_id'] ?? null)]);
+        $user->syncRoles([Role::findById((int) $validated['role_id'])]);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('User updated.')]);
 
@@ -78,18 +76,15 @@ class UsersController extends Controller
     }
 
     /**
-     * @return LengthAwarePaginator<int, array{id: int, type: string, name: string, email: string, status: string, role_id: int|null, roles: array<int, string>, created_at: string|null}>
+     * @return LengthAwarePaginator<int, array{id: int, name: string, email: string, status: string, role_id: int|null, roles: array<int, string>, created_at: string|null}>
      */
-    private function usersByType(string $type, string $pageName): LengthAwarePaginator
+    private function users(): LengthAwarePaginator
     {
-        $userRoleId = Role::findOrCreate('user')->id;
-
         $users = fn (?int $page = null): LengthAwarePaginator => User::query()
             ->with('roles:id,name,fallback_label')
-            ->select(['id', 'type', 'name', 'email', 'status', 'created_at'])
-            ->where('type', $type)
+            ->select(['id', 'name', 'email', 'status', 'created_at'])
             ->latest('id')
-            ->paginate(self::USERS_PER_PAGE, ['*'], $pageName, $page);
+            ->paginate(self::USERS_PER_PAGE, ['*'], 'users', $page);
 
         $paginator = $users();
 
@@ -99,14 +94,11 @@ class UsersController extends Controller
 
         return $paginator->through(fn (User $user): array => [
             'id' => $user->id,
-            'type' => $user->type,
             'name' => $user->name,
             'email' => $user->email,
             'status' => $user->status,
-            'role_id' => $type === 'regular' ? $userRoleId : $user->roles->first()?->id,
-            'roles' => $type === 'regular'
-                ? ['User']
-                : $user->roles->map(fn (Role $role): string => $this->roleLabel($role))->values()->all(),
+            'role_id' => $user->roles->first()?->id,
+            'roles' => $user->roles->map(fn (Role $role): string => $this->roleLabel($role))->values()->all(),
             'created_at' => $user->created_at?->format('d.m.Y H:i'),
         ]);
     }
@@ -118,7 +110,8 @@ class UsersController extends Controller
     {
         return Role::query()
             ->select(['id', 'name', 'fallback_label'])
-            ->orderByRaw("case when name = 'admin' then 0 when name = 'user' then 1 else 2 end")
+            ->where('name', '!=', 'user')
+            ->orderByRaw("case when name = 'admin' then 0 else 1 end")
             ->orderBy('name')
             ->get()
             ->map(fn (Role $role): array => [
@@ -128,20 +121,10 @@ class UsersController extends Controller
             ]);
     }
 
-    private function assignedRole(string $type, int|string|null $roleId): Role
-    {
-        if ($type === 'regular') {
-            return Role::findOrCreate('user');
-        }
-
-        return $roleId === null ? Role::findOrCreate('user') : Role::findById((int) $roleId);
-    }
-
     private function roleLabel(Role $role): string
     {
         return $role->fallback_label ?: match ($role->name) {
             'admin' => 'Administrator',
-            'user' => 'User',
             default => Str::headline($role->name),
         };
     }

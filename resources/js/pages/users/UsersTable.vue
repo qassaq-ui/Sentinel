@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import { InfiniteScroll, router } from '@inertiajs/vue3';
+import { Ban, Pencil, Trash2, UsersRound } from '@lucide/vue';
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import ConfirmActionDialog from '@/components/ConfirmActionDialog.vue';
 import { Button } from '@/components/ui/button';
 import {
@@ -12,14 +15,10 @@ import {
 import { useTranslations } from '@/composables/useTranslations';
 import { cn } from '@/lib/utils';
 import { destroy as destroyUser, update as updateUser } from '@/routes/users';
-import { InfiniteScroll, router } from '@inertiajs/vue3';
-import { Ban, Pencil, Trash2, UsersRound } from '@lucide/vue';
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import UsersTableSkeletonRows from './UsersTableSkeletonRows.vue';
 
 export type UsersTableUser = {
     id: number;
-    type: 'regular' | 'system';
     name: string;
     email: string;
     status: 'active' | 'blocked';
@@ -58,7 +57,10 @@ const hasActions = computed(
 const loadingSkeletonRows = computed(() => {
     const headerHeight = 41;
     const rowHeight = 61;
-    const availableHeight = Math.max(0, tableViewportHeight.value - headerHeight);
+    const availableHeight = Math.max(
+        0,
+        tableViewportHeight.value - headerHeight,
+    );
 
     return Math.max(4, Math.ceil(availableHeight / rowHeight));
 });
@@ -82,7 +84,6 @@ function toggleStatus(user: UsersTableUser) {
     router.patch(
         updateUser(user).url,
         {
-            type: user.type,
             status: user.status === 'blocked' ? 'active' : 'blocked',
             name: user.name,
             email: user.email,
@@ -132,7 +133,7 @@ onBeforeUnmount(() => {
 
 <template>
     <div
-        class="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-border bg-background"
+        class="flex min-h-0 flex-1 flex-col overflow-hidden bg-white dark:bg-[#111113]"
     >
         <div ref="tableViewport" class="relative min-h-0 flex-1 overflow-auto">
             <InfiniteScroll
@@ -145,7 +146,9 @@ onBeforeUnmount(() => {
                 #default="{ loadingNext }"
             >
                 <Table class="w-full table-fixed">
-                    <TableHeader class="sticky top-0 z-10 bg-background">
+                    <TableHeader
+                        class="sticky top-0 z-10 bg-[#f7f7f8] dark:bg-[#1a1a1c]"
+                    >
                         <TableRow>
                             <TableHead class="w-[34%]">
                                 {{ t('Full name') }}
@@ -200,7 +203,11 @@ onBeforeUnmount(() => {
                             </TableCell>
                         </TableRow>
 
-                        <TableRow v-for="user in loading ? [] : users" :key="user.id">
+                        <TableRow
+                            v-for="user in loading ? [] : users"
+                            :key="user.id"
+                            class="h-16 border-black/7 transition-colors hover:bg-[#f7f7f8] dark:border-white/8 dark:hover:bg-white/[0.045]"
+                        >
                             <TableCell>
                                 <div class="min-w-0">
                                     <div class="truncate font-medium">

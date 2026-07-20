@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { Form, Head } from '@inertiajs/vue3';
+import SubmitButton from '@/components/SubmitButton.vue';
 import TextLink from '@/components/TextLink.vue';
-import { Button } from '@/components/ui/button';
-import { Spinner } from '@/components/ui/spinner';
 import { useTranslations } from '@/composables/useTranslations';
 import { logout } from '@/routes';
 import { send } from '@/routes/verification';
@@ -27,7 +26,7 @@ const { t } = useTranslations();
 
     <div
         v-if="status === 'verification-link-sent'"
-        class="mb-4 text-center text-sm font-medium text-green-600"
+        class="mb-5 rounded-xl bg-emerald-50 px-4 py-3 text-center text-sm leading-5 font-medium text-emerald-700"
     >
         {{
             t(
@@ -38,15 +37,22 @@ const { t } = useTranslations();
 
     <Form
         v-bind="send.form()"
-        class="space-y-6 text-center"
+        disable-while-processing
+        class="grid gap-5 text-center inert:pointer-events-none inert:opacity-70"
         v-slot="{ processing }"
     >
-        <Button :disabled="processing" variant="secondary">
-            <Spinner v-if="processing" />
+        <SubmitButton
+            :processing="processing"
+            class="h-12 rounded-xl bg-[#0071e3] text-base font-semibold text-white shadow-none hover:bg-[#0077ed] active:scale-[0.99]"
+        >
             {{ t('Resend verification email') }}
-        </Button>
+        </SubmitButton>
 
-        <TextLink :href="logout()" as="button" class="mx-auto block text-sm">
+        <TextLink
+            :href="logout()"
+            as="button"
+            class="mx-auto block text-sm font-medium text-slate-500 no-underline hover:text-[#0071e3] hover:underline"
+        >
             {{ t('Log out') }}
         </TextLink>
     </Form>

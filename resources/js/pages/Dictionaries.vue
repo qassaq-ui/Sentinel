@@ -1,4 +1,14 @@
 <script setup lang="ts">
+import { Head, router, useForm, usePage } from '@inertiajs/vue3';
+import { Pencil, Trash2 } from '@lucide/vue';
+import {
+    computed,
+    nextTick,
+    onBeforeUnmount,
+    onMounted,
+    ref,
+    watch,
+} from 'vue';
 import DictionariesController from '@/actions/App/Http/Controllers/DictionariesController';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -12,16 +22,6 @@ import {
 } from '@/components/ui/table';
 import { useTranslations } from '@/composables/useTranslations';
 import type { Auth } from '@/types/auth';
-import { Head, router, useForm, usePage } from '@inertiajs/vue3';
-import { Pencil, Trash2 } from '@lucide/vue';
-import {
-    computed,
-    nextTick,
-    onBeforeUnmount,
-    onMounted,
-    ref,
-    watch,
-} from 'vue';
 import DictionaryTableSkeletonRows from './dictionaries/DictionaryTableSkeletonRows.vue';
 import InquiryCategoryDialog from './dictionaries/InquiryCategoryDialog.vue';
 import InquiryOutcomeDialog from './dictionaries/InquiryOutcomeDialog.vue';
@@ -55,7 +55,10 @@ const tableViewportHeight = ref(0);
 const loadingSkeletonRows = computed(() => {
     const headerHeight = 41;
     const rowHeight = 57;
-    const availableHeight = Math.max(0, tableViewportHeight.value - headerHeight);
+    const availableHeight = Math.max(
+        0,
+        tableViewportHeight.value - headerHeight,
+    );
 
     return Math.max(4, Math.ceil(availableHeight / rowHeight));
 });
@@ -331,7 +334,9 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-    <div class="flex min-h-0 flex-1 flex-col">
+    <div
+        class="flex min-h-0 flex-1 flex-col overflow-hidden bg-white text-[#1d1d1f] dark:bg-[#111113] dark:text-white"
+    >
         <Head :title="t('Dictionaries')" />
 
         <InquiryCategoryDialog
@@ -355,40 +360,41 @@ onBeforeUnmount(() => {
             @submit="saveOutcome"
         />
 
-        <div class="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden p-4">
-            <div class="flex shrink-0 items-center justify-between gap-4">
-                <h1 class="text-lg font-semibold">{{ t('Dictionaries') }}</h1>
-                <Button
-                    v-if="activeTab === 'category' && can.dictionariesCreate"
-                    variant="link"
-                    class="h-auto px-0 py-0 font-semibold text-[var(--color-tab)] hover:text-[var(--color-tab)]"
-                    @click="openCreateDialog"
-                >
-                    {{ t('+ Add category') }}
-                </Button>
-            </div>
+        <header
+            class="flex shrink-0 items-center justify-between gap-4 px-4 py-5 sm:px-6 lg:px-8 lg:py-6"
+        >
+            <h1
+                class="text-[1.75rem] font-semibold tracking-[-0.04em] lg:text-[2rem]"
+            >
+                {{ t('Dictionaries') }}
+            </h1>
+            <Button
+                v-if="activeTab === 'category' && can.dictionariesCreate"
+                variant="link"
+                class="h-auto px-0 py-0 font-semibold text-[var(--color-tab)] hover:text-[var(--color-tab)]"
+                @click="openCreateDialog"
+            >
+                {{ t('+ Add category') }}
+            </Button>
+        </header>
 
+        <div
+            class="shrink-0 border-y border-black/8 px-4 py-3 sm:px-6 lg:px-8 dark:border-white/10"
+        >
             <div
-                class="relative grid h-10 w-full max-w-md grid-cols-2 rounded-lg bg-muted p-1"
+                class="grid h-10 w-full max-w-md grid-cols-2 gap-0.5 rounded-[10px] bg-black/[0.055] p-0.5 dark:bg-white/[0.08]"
                 role="tablist"
                 aria-label="Dictionaries tabs"
             >
-                <span
-                    class="pointer-events-none absolute inset-y-1 left-1 w-[calc(50%_-_0.25rem)] rounded-md bg-[var(--color-tab)] shadow-sm transition-transform duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)]"
-                    :class="{
-                        'translate-x-full': activeTab === 'outcome',
-                    }"
-                />
-
                 <button
                     type="button"
                     role="tab"
                     :aria-selected="activeTab === 'category'"
-                    class="relative z-10 inline-flex items-center justify-center rounded-md px-3 text-sm font-medium transition-colors duration-200"
+                    class="inline-flex items-center justify-center rounded-lg px-3.5 text-[13px] font-medium transition-[color,background-color,box-shadow] duration-150"
                     :class="
                         activeTab === 'category'
-                            ? 'text-white'
-                            : 'text-muted-foreground hover:text-foreground'
+                            ? 'bg-white text-[#1d1d1f] shadow-[0_1px_3px_rgba(0,0,0,0.12)] dark:bg-white/15 dark:text-white dark:shadow-none'
+                            : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white'
                     "
                     @click="activeTab = 'category'"
                 >
@@ -399,275 +405,277 @@ onBeforeUnmount(() => {
                     type="button"
                     role="tab"
                     :aria-selected="activeTab === 'outcome'"
-                    class="relative z-10 inline-flex items-center justify-center rounded-md px-3 text-sm font-medium transition-colors duration-200"
+                    class="inline-flex items-center justify-center rounded-lg px-3.5 text-[13px] font-medium transition-[color,background-color,box-shadow] duration-150"
                     :class="
                         activeTab === 'outcome'
-                            ? 'text-white'
-                            : 'text-muted-foreground hover:text-foreground'
+                            ? 'bg-white text-[#1d1d1f] shadow-[0_1px_3px_rgba(0,0,0,0.12)] dark:bg-white/15 dark:text-white dark:shadow-none'
+                            : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white'
                     "
                     @click="activeTab = 'outcome'"
                 >
                     {{ t('Review outcomes') }}
                 </button>
             </div>
+        </div>
 
-            <div
-                v-if="activeTab === 'category'"
-                class="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-border bg-background"
-            >
-                <div class="border-b border-border px-4 py-3">
-                    <div class="text-sm font-medium">
-                        {{ t('Inquiry categories') }}
-                    </div>
-                </div>
-
-                <div
-                    ref="categoryTableViewport"
-                    class="min-h-0 flex-1 overflow-auto"
-                >
-                    <Table class="w-full table-fixed">
-                        <TableHeader class="sticky top-0 z-10 bg-background">
-                            <TableRow>
-                                <TableHead class="w-[34%]">
-                                    {{ t('Name') }}
-                                </TableHead>
-                                <TableHead class="w-[14%]">
-                                    {{ t('Review period') }}
-                                </TableHead>
-                                <TableHead class="w-[12%]">
-                                    {{ t('Status') }}
-                                </TableHead>
-                                <TableHead class="w-[8%]">
-                                    {{ t('Sort order') }}
-                                </TableHead>
-                                <TableHead class="w-[8%] text-right">
-                                    {{ t('Actions') }}
-                                </TableHead>
-                            </TableRow>
-                        </TableHeader>
-
-                        <TableBody>
-                            <DictionaryTableSkeletonRows
-                                v-if="isTabLoading"
-                                :loading="true"
-                                :count="loadingSkeletonRows"
-                                :delay="0"
-                                type="category"
-                            />
-
-                            <TableRow v-else-if="categories.length === 0">
-                                <TableCell
-                                    :colspan="5"
-                                    class="h-56 text-center text-sm text-muted-foreground"
-                                >
-                                    {{ t('No categories found') }}
-                                </TableCell>
-                            </TableRow>
-
-                            <TableRow
-                                v-for="category in isTabLoading ? [] : categories"
-                                :key="category.uuid"
-                            >
-                                <TableCell class="min-w-0">
-                                    <div class="truncate text-sm font-medium">
-                                        {{ category.localized_name }}
-                                    </div>
-                                    <div
-                                        class="mt-1 truncate text-xs text-muted-foreground"
-                                    >
-                                        {{ category.localized_description }}
-                                    </div>
-                                </TableCell>
-                                <TableCell>
-                                    {{
-                                        t(':count days', {
-                                            count: category.review_days,
-                                        })
-                                    }}
-                                </TableCell>
-
-                                <TableCell>
-                                    <Badge
-                                        variant="outline"
-                                        class="rounded-md px-2 py-0.5"
-                                        :class="
-                                            category.is_active
-                                                ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-300'
-                                                : 'text-muted-foreground'
-                                        "
-                                    >
-                                        {{
-                                            category.is_active
-                                                ? t('Active')
-                                                : t('Inactive')
-                                        }}
-                                    </Badge>
-                                </TableCell>
-
-                                <TableCell>
-                                    {{ category.sort_order }}
-                                </TableCell>
-
-                                <TableCell class="text-right">
-                                    <div class="inline-flex items-center gap-1">
-                                        <Button
-                                            v-if="can.dictionariesUpdate"
-                                            type="button"
-                                            variant="ghost"
-                                            size="icon-sm"
-                                            :aria-label="
-                                                t('Edit inquiry category')
-                                            "
-                                            @click="openEditDialog(category)"
-                                        >
-                                            <Pencil class="size-4" />
-                                        </Button>
-                                        <Button
-                                            v-if="can.dictionariesDelete"
-                                            type="button"
-                                            variant="ghost"
-                                            size="icon-sm"
-                                            class="text-destructive hover:text-destructive"
-                                            :aria-label="
-                                                t('Delete inquiry category')
-                                            "
-                                            @click="deleteCategory(category)"
-                                        >
-                                            <Trash2 class="size-4" />
-                                        </Button>
-                                    </div>
-                                </TableCell>
-                            </TableRow>
-                        </TableBody>
-                    </Table>
+        <div
+            v-if="activeTab === 'category'"
+            class="flex min-h-0 flex-1 flex-col overflow-hidden bg-white dark:bg-[#111113]"
+        >
+            <div class="border-b border-border px-4 py-3">
+                <div class="text-sm font-medium">
+                    {{ t('Inquiry categories') }}
                 </div>
             </div>
 
             <div
-                v-if="activeTab === 'outcome'"
-                class="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-border bg-background"
+                ref="categoryTableViewport"
+                class="min-h-0 flex-1 overflow-auto"
             >
-                <div class="border-b border-border px-4 py-3">
-                    <div class="text-sm font-medium">
-                        {{ t('Review outcomes') }}
-                    </div>
-                </div>
+                <Table class="w-full table-fixed">
+                    <TableHeader
+                        class="sticky top-0 z-10 bg-[#f7f7f8] dark:bg-[#1a1a1c]"
+                    >
+                        <TableRow>
+                            <TableHead class="w-[34%]">
+                                {{ t('Name') }}
+                            </TableHead>
+                            <TableHead class="w-[14%]">
+                                {{ t('Review period') }}
+                            </TableHead>
+                            <TableHead class="w-[12%]">
+                                {{ t('Status') }}
+                            </TableHead>
+                            <TableHead class="w-[8%]">
+                                {{ t('Sort order') }}
+                            </TableHead>
+                            <TableHead class="w-[8%] text-right">
+                                {{ t('Actions') }}
+                            </TableHead>
+                        </TableRow>
+                    </TableHeader>
 
-                <div
-                    ref="outcomeTableViewport"
-                    class="min-h-0 flex-1 overflow-auto"
-                >
-                    <Table class="w-full table-fixed">
-                        <TableHeader class="sticky top-0 z-10 bg-background">
-                            <TableRow>
-                                <TableHead class="w-[38%]">
-                                    {{ t('Name') }}
-                                </TableHead>
-                                <TableHead class="w-[34%]">
-                                    {{ t('AI instruction') }}
-                                </TableHead>
-                                <TableHead class="w-[12%]">
-                                    {{ t('Status') }}
-                                </TableHead>
-                                <TableHead class="w-[8%]">
-                                    {{ t('Sort order') }}
-                                </TableHead>
-                                <TableHead class="w-[6%] text-right">
-                                    {{ t('Actions') }}
-                                </TableHead>
-                            </TableRow>
-                        </TableHeader>
+                    <TableBody>
+                        <DictionaryTableSkeletonRows
+                            v-if="isTabLoading"
+                            :loading="true"
+                            :count="loadingSkeletonRows"
+                            :delay="0"
+                            type="category"
+                        />
 
-                        <TableBody>
-                            <DictionaryTableSkeletonRows
-                                v-if="isTabLoading"
-                                :loading="true"
-                                :count="loadingSkeletonRows"
-                                :delay="0"
-                                type="outcome"
-                            />
-
-                            <TableRow v-else-if="outcomes.length === 0">
-                                <TableCell
-                                    :colspan="5"
-                                    class="h-56 text-center text-sm text-muted-foreground"
-                                >
-                                    {{ t('No review outcomes found') }}
-                                </TableCell>
-                            </TableRow>
-
-                            <TableRow
-                                v-for="outcome in isTabLoading ? [] : outcomes"
-                                :key="outcome.code"
+                        <TableRow v-else-if="categories.length === 0">
+                            <TableCell
+                                :colspan="5"
+                                class="h-56 text-center text-sm text-muted-foreground"
                             >
-                                <TableCell class="min-w-0">
-                                    <div class="truncate text-sm font-medium">
-                                        {{ outcome.localized_name }}
-                                    </div>
-                                    <div
-                                        class="mt-1 truncate text-xs text-muted-foreground"
-                                    >
-                                        {{ outcome.localized_description }}
-                                    </div>
-                                </TableCell>
+                                {{ t('No categories found') }}
+                            </TableCell>
+                        </TableRow>
 
-                                <TableCell class="min-w-0">
-                                    <div
-                                        class="line-clamp-2 text-xs leading-5 text-muted-foreground"
-                                    >
-                                        {{ outcome.ai_instruction }}
-                                    </div>
-                                </TableCell>
+                        <TableRow
+                            v-for="category in isTabLoading ? [] : categories"
+                            :key="category.uuid"
+                        >
+                            <TableCell class="min-w-0">
+                                <div class="truncate text-sm font-medium">
+                                    {{ category.localized_name }}
+                                </div>
+                                <div
+                                    class="mt-1 truncate text-xs text-muted-foreground"
+                                >
+                                    {{ category.localized_description }}
+                                </div>
+                            </TableCell>
+                            <TableCell>
+                                {{
+                                    t(':count days', {
+                                        count: category.review_days,
+                                    })
+                                }}
+                            </TableCell>
 
-                                <TableCell>
-                                    <button
-                                        type="button"
-                                        role="switch"
-                                        :aria-checked="outcome.is_active"
-                                        :aria-label="outcomeSwitchLabel(outcome)"
-                                        :disabled="
-                                            !can.dictionariesUpdate ||
-                                            outcomeToggleProcessingId === outcome.id
-                                        "
-                                        class="relative inline-flex h-5 w-9 shrink-0 items-center rounded-full border border-border px-0.5 transition-colors disabled:cursor-not-allowed disabled:opacity-60"
-                                        :class="
-                                            outcome.is_active
-                                                ? 'border-[var(--color-tab)] bg-[var(--color-tab)]'
-                                                : 'bg-muted'
-                                        "
-                                        @click="toggleOutcomeActive(outcome)"
-                                    >
-                                        <span
-                                            class="size-4 rounded-full bg-background shadow-sm transition-transform"
-                                            :class="
-                                                outcome.is_active
-                                                    ? 'translate-x-4'
-                                                    : 'translate-x-0'
-                                            "
-                                        />
-                                    </button>
-                                </TableCell>
+                            <TableCell>
+                                <Badge
+                                    variant="outline"
+                                    class="rounded-md px-2 py-0.5"
+                                    :class="
+                                        category.is_active
+                                            ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-300'
+                                            : 'text-muted-foreground'
+                                    "
+                                >
+                                    {{
+                                        category.is_active
+                                            ? t('Active')
+                                            : t('Inactive')
+                                    }}
+                                </Badge>
+                            </TableCell>
 
-                                <TableCell>
-                                    {{ outcome.sort_order }}
-                                </TableCell>
+                            <TableCell>
+                                {{ category.sort_order }}
+                            </TableCell>
 
-                                <TableCell class="text-right">
+                            <TableCell class="text-right">
+                                <div class="inline-flex items-center gap-1">
                                     <Button
                                         v-if="can.dictionariesUpdate"
                                         type="button"
                                         variant="ghost"
                                         size="icon-sm"
-                                        :aria-label="t('Edit review outcome')"
-                                        @click="openEditOutcomeDialog(outcome)"
+                                        :aria-label="t('Edit inquiry category')"
+                                        @click="openEditDialog(category)"
                                     >
                                         <Pencil class="size-4" />
                                     </Button>
-                                </TableCell>
-                            </TableRow>
-                        </TableBody>
-                    </Table>
+                                    <Button
+                                        v-if="can.dictionariesDelete"
+                                        type="button"
+                                        variant="ghost"
+                                        size="icon-sm"
+                                        class="text-destructive hover:text-destructive"
+                                        :aria-label="
+                                            t('Delete inquiry category')
+                                        "
+                                        @click="deleteCategory(category)"
+                                    >
+                                        <Trash2 class="size-4" />
+                                    </Button>
+                                </div>
+                            </TableCell>
+                        </TableRow>
+                    </TableBody>
+                </Table>
+            </div>
+        </div>
+
+        <div
+            v-if="activeTab === 'outcome'"
+            class="flex min-h-0 flex-1 flex-col overflow-hidden bg-white dark:bg-[#111113]"
+        >
+            <div class="border-b border-border px-4 py-3">
+                <div class="text-sm font-medium">
+                    {{ t('Review outcomes') }}
                 </div>
+            </div>
+
+            <div
+                ref="outcomeTableViewport"
+                class="min-h-0 flex-1 overflow-auto"
+            >
+                <Table class="w-full table-fixed">
+                    <TableHeader
+                        class="sticky top-0 z-10 bg-[#f7f7f8] dark:bg-[#1a1a1c]"
+                    >
+                        <TableRow>
+                            <TableHead class="w-[38%]">
+                                {{ t('Name') }}
+                            </TableHead>
+                            <TableHead class="w-[34%]">
+                                {{ t('AI instruction') }}
+                            </TableHead>
+                            <TableHead class="w-[12%]">
+                                {{ t('Status') }}
+                            </TableHead>
+                            <TableHead class="w-[8%]">
+                                {{ t('Sort order') }}
+                            </TableHead>
+                            <TableHead class="w-[6%] text-right">
+                                {{ t('Actions') }}
+                            </TableHead>
+                        </TableRow>
+                    </TableHeader>
+
+                    <TableBody>
+                        <DictionaryTableSkeletonRows
+                            v-if="isTabLoading"
+                            :loading="true"
+                            :count="loadingSkeletonRows"
+                            :delay="0"
+                            type="outcome"
+                        />
+
+                        <TableRow v-else-if="outcomes.length === 0">
+                            <TableCell
+                                :colspan="5"
+                                class="h-56 text-center text-sm text-muted-foreground"
+                            >
+                                {{ t('No review outcomes found') }}
+                            </TableCell>
+                        </TableRow>
+
+                        <TableRow
+                            v-for="outcome in isTabLoading ? [] : outcomes"
+                            :key="outcome.code"
+                        >
+                            <TableCell class="min-w-0">
+                                <div class="truncate text-sm font-medium">
+                                    {{ outcome.localized_name }}
+                                </div>
+                                <div
+                                    class="mt-1 truncate text-xs text-muted-foreground"
+                                >
+                                    {{ outcome.localized_description }}
+                                </div>
+                            </TableCell>
+
+                            <TableCell class="min-w-0">
+                                <div
+                                    class="line-clamp-2 text-xs leading-5 text-muted-foreground"
+                                >
+                                    {{ outcome.ai_instruction }}
+                                </div>
+                            </TableCell>
+
+                            <TableCell>
+                                <button
+                                    type="button"
+                                    role="switch"
+                                    :aria-checked="outcome.is_active"
+                                    :aria-label="outcomeSwitchLabel(outcome)"
+                                    :disabled="
+                                        !can.dictionariesUpdate ||
+                                        outcomeToggleProcessingId === outcome.id
+                                    "
+                                    class="relative inline-flex h-5 w-9 shrink-0 items-center rounded-full border border-border px-0.5 transition-colors disabled:cursor-not-allowed disabled:opacity-60"
+                                    :class="
+                                        outcome.is_active
+                                            ? 'border-[var(--color-tab)] bg-[var(--color-tab)]'
+                                            : 'bg-muted'
+                                    "
+                                    @click="toggleOutcomeActive(outcome)"
+                                >
+                                    <span
+                                        class="size-4 rounded-full bg-background shadow-sm transition-transform"
+                                        :class="
+                                            outcome.is_active
+                                                ? 'translate-x-4'
+                                                : 'translate-x-0'
+                                        "
+                                    />
+                                </button>
+                            </TableCell>
+
+                            <TableCell>
+                                {{ outcome.sort_order }}
+                            </TableCell>
+
+                            <TableCell class="text-right">
+                                <Button
+                                    v-if="can.dictionariesUpdate"
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon-sm"
+                                    :aria-label="t('Edit review outcome')"
+                                    @click="openEditOutcomeDialog(outcome)"
+                                >
+                                    <Pencil class="size-4" />
+                                </Button>
+                            </TableCell>
+                        </TableRow>
+                    </TableBody>
+                </Table>
             </div>
         </div>
     </div>

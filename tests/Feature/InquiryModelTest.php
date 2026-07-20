@@ -45,7 +45,7 @@ test('inquiries keep category review period snapshot', function () {
     expect($inquiry)
         ->toBeInstanceOf(Inquiry::class)
         ->number->toBe('KAZM-0726-0001')
-        ->type->toBe(Inquiry::TYPE_PORTAL)
+        ->type->toBe(Inquiry::TYPE_IDENTIFIED)
         ->status->toBe(Inquiry::STATUS_NEW)
         ->created_by_id->toBe($creator->id)
         ->inquiry_category_id->toBe($category->id)

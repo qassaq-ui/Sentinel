@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Inquiry;
 use App\Services\AIAssistant\InquiryTranslationService;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
@@ -13,7 +14,10 @@ class InquiryTranslationRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return true;
+        $inquiry = $this->route('inquiry');
+
+        return $inquiry instanceof Inquiry
+            && $this->user()?->can('view', $inquiry) === true;
     }
 
     /**

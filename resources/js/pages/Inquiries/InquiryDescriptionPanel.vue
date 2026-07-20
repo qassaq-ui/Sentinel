@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Languages, LoaderCircle, RotateCcw } from '@lucide/vue';
 import { Button } from '@/components/ui/button';
 import {
     DropdownMenu,
@@ -7,7 +8,6 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useTranslations } from '@/composables/useTranslations';
-import { Languages, LoaderCircle, RotateCcw } from '@lucide/vue';
 
 const supportedLanguages: { code: string; label: string }[] = [
     { code: 'ru', label: 'Русский' },
@@ -45,13 +45,20 @@ function selectLanguage(language: string) {
 </script>
 
 <template>
-    <section class="rounded-lg bg-muted/40 px-4 py-3">
+    <section
+        class="border-y border-black/8 bg-[#f7f7f8] px-4 py-4 dark:border-white/10 dark:bg-[#1a1a1c]"
+    >
         <div class="flex flex-wrap items-center justify-between gap-3">
-            <h2 class="text-sm font-semibold">{{ t('Inquiry description') }}</h2>
+            <h2 class="text-sm font-semibold">
+                {{ t('Inquiry description') }}
+            </h2>
 
             <div class="flex items-center gap-2">
                 <Button
-                    v-if="selectedLanguage !== '' || translatedDescription !== null"
+                    v-if="
+                        selectedLanguage !== '' ||
+                        translatedDescription !== null
+                    "
                     type="button"
                     variant="ghost"
                     size="sm"
@@ -72,7 +79,10 @@ function selectLanguage(language: string) {
                             class="h-8 text-xs text-[var(--color-tab)]"
                             :disabled="isTranslating"
                         >
-                            <LoaderCircle v-if="isTranslating" class="size-3.5 animate-spin" />
+                            <LoaderCircle
+                                v-if="isTranslating"
+                                class="size-3.5 animate-spin"
+                            />
                             <Languages v-else class="size-3.5" />
                             {{ t('Translate') }}
                         </Button>
@@ -100,14 +110,14 @@ function selectLanguage(language: string) {
 
         <p
             v-if="isTranslating"
-            class="mt-4 max-w-none animate-pulse whitespace-pre-line rounded-sm bg-primary/10 text-sm leading-6 text-transparent"
+            class="mt-4 max-w-none animate-pulse rounded-sm bg-primary/10 text-sm leading-6 whitespace-pre-line text-transparent"
         >
             {{ description || t('No description provided') }}
         </p>
 
         <p
             v-else
-            class="mt-4 max-w-none whitespace-pre-line text-sm leading-6 text-foreground"
+            class="mt-4 max-w-none text-sm leading-6 whitespace-pre-line text-foreground"
         >
             <template v-if="translatedDescription !== null">
                 {{ translatedDescription || t('No description provided') }}

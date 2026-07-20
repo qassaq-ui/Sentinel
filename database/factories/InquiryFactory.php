@@ -28,7 +28,7 @@ class InquiryFactory extends Factory
             'number_period' => $submittedAt->format('my'),
             'number_sequence' => fake()->numberBetween(1, 9999),
             'number_format' => '{prefix}-{month}{year}-{sequence}',
-            'type' => Inquiry::TYPE_PORTAL,
+            'type' => Inquiry::TYPE_IDENTIFIED,
             'status' => fake()->randomElement([
                 Inquiry::STATUS_NEW,
                 Inquiry::STATUS_IN_PROGRESS,

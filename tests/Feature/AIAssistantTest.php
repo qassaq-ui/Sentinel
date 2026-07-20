@@ -1,11 +1,24 @@
 <?php
 
 use App\Actions\Inquiries\CreateInquiry;
+use App\Models\Inquiry;
 use App\Models\InquiryCategory;
 use App\Models\User;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Http;
+use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
+
+test('the AI assistant widget is only mounted on the inquiry detail page', function () {
+    $appLayout = file_get_contents(resource_path('js/layouts/app/AppSidebarLayout.vue'));
+    $inquiryDetailPage = file_get_contents(resource_path('js/pages/Inquiries/Show.vue'));
+
+    expect($appLayout)
+        ->not->toContain('AIAssistantWidget')
+        ->and($inquiryDetailPage)
+        ->toContain("import AIAssistantWidget from '@/components/AIAssistantWidget.vue';")
+        ->toContain('<AIAssistantWidget />');
+});
 
 test('authenticated users can ask the AI assistant to analyze an inquiry', function () {
     config([
@@ -27,6 +40,10 @@ test('authenticated users can ask the AI assistant to analyze an inquiry', funct
     ]);
 
     $user = User::factory()->create();
+    $user->givePermissionTo([
+        Permission::findOrCreate('inquiries.view'),
+        Permission::findOrCreate('inquiries.view_all'),
+    ]);
     $category = InquiryCategory::factory()->create([
         'fallback_name' => 'Safety',
         'fallback_description' => 'Safety risks and missing protective equipment.',
@@ -93,12 +110,29 @@ test('the AI assistant returns a temporary unavailable response when local servi
         ]);
 });
 
+test('the AI assistant does not expose inquiry context without view permission', function () {
+    $user = User::factory()->create();
+    $inquiry = Inquiry::factory()->create();
+
+    $this->actingAs($user)
+        ->postJson(route('ai-assistant.chat'), [
+            'job' => 'analyze_inquiry',
+            'locale' => 'ru',
+            'inquiry_number' => $inquiry->number,
+        ])
+        ->assertForbidden();
+});
+
 test('the AI assistant recommends assignees by role relevance and active workload', function () {
     Http::fake([
         '*' => Http::response([], 500),
     ]);
 
     $requestUser = User::factory()->create();
+    $requestUser->givePermissionTo([
+        Permission::findOrCreate('inquiries.view'),
+        Permission::findOrCreate('inquiries.view_all'),
+    ]);
     $category = InquiryCategory::factory()->create([
         'fallback_name' => 'Safety',
         'fallback_description' => 'Safety risks, equipment hazards, and missing protective equipment.',
@@ -127,12 +161,10 @@ test('the AI assistant recommends assignees by role relevance and active workloa
 
     $safetySpecialist = User::factory()->create([
         'name' => 'Safety Specialist',
-        'type' => 'system',
         'status' => 'active',
     ]);
     $financeSpecialist = User::factory()->create([
         'name' => 'Finance Specialist',
-        'type' => 'system',
         'status' => 'active',
     ]);
 

@@ -45,7 +45,7 @@ function hasPermission(permission: Permission) {
 
 <template>
     <div
-        class="flex min-h-64 min-w-0 flex-col overflow-hidden rounded-lg border border-border bg-background"
+        class="flex min-h-64 min-w-0 flex-col overflow-hidden border-y border-black/8 bg-[#f7f7f8] dark:border-white/10 dark:bg-[#1a1a1c]"
     >
         <div class="border-b border-border px-4 py-3">
             <div class="text-sm font-medium">{{ t('Permissions') }}</div>

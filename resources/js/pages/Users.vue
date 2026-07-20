@@ -1,8 +1,13 @@
 <script setup lang="ts">
-import { useTranslations } from '@/composables/useTranslations';
-import type { Auth } from '@/types/auth';
-import { Head, usePage } from '@inertiajs/vue3';
+import { Head, Link, usePage } from '@inertiajs/vue3';
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
+import { useTranslations } from '@/composables/useTranslations';
+import { index as rolesIndex } from '@/routes/roles-permissions';
+import { index as usersIndex } from '@/routes/users';
+import type { Auth } from '@/types/auth';
+import RolesPermissionsSkeleton from './settings/roles-permissions/RolesPermissionsSkeleton.vue';
+import type { Permission, Role } from './settings/roles-permissions/types';
+import RolesPermissionsPanel from './settings/RolesPermissions.vue';
 import type { UserRoleOption } from './users/UserCreateSheet.vue';
 import UserCreateSheet from './users/UserCreateSheet.vue';
 import UserEditSheet from './users/UserEditSheet.vue';
@@ -17,38 +22,42 @@ type ScrollUsers = {
 };
 
 type Props = {
-    regularUsers: ScrollUsers;
-    systemUsers: ScrollUsers;
-    roles: UserRoleOption[];
+    initialTab: 'users' | 'roles';
+    users?: ScrollUsers;
+    assignableRoles?: UserRoleOption[];
+    roleCatalog?: Role[];
+    permissions?: Permission[];
 };
 
-defineProps<Props>();
+const props = withDefaults(defineProps<Props>(), {
+    users: () => ({ data: [] }),
+    assignableRoles: () => [],
+    roleCatalog: () => [],
+    permissions: () => [],
+});
 
 const { t } = useTranslations();
 const page = usePage<{ auth: Auth }>();
 const can = computed(() => page.props.auth.can);
-const activeTab = ref<'regular' | 'system'>('regular');
-const isTabLoading = ref(true);
+const activeTab = ref<'users' | 'roles'>(props.initialTab);
+const isTableLoading = ref(props.initialTab === 'users');
+const isRolesLoading = ref(false);
 const isEditSheetOpen = ref(false);
 const editingUser = ref<UsersTableUser | null>(null);
-let tabLoadingTimer: ReturnType<typeof window.setTimeout> | null = null;
+const loadingTimer = window.setTimeout(() => {
+    isTableLoading.value = false;
+}, 900);
+let rolesLoadingTimer: ReturnType<typeof window.setTimeout> | null = null;
 
-function clearTabLoadingTimer() {
-    if (tabLoadingTimer === null) {
-        return;
+function showRolesSkeleton() {
+    if (rolesLoadingTimer !== null) {
+        window.clearTimeout(rolesLoadingTimer);
     }
 
-    window.clearTimeout(tabLoadingTimer);
-    tabLoadingTimer = null;
-}
-
-function showTabSkeleton() {
-    clearTabLoadingTimer();
-    isTabLoading.value = true;
-
-    tabLoadingTimer = window.setTimeout(() => {
-        isTabLoading.value = false;
-        tabLoadingTimer = null;
+    isRolesLoading.value = true;
+    rolesLoadingTimer = window.setTimeout(() => {
+        isRolesLoading.value = false;
+        rolesLoadingTimer = null;
     }, 900);
 }
 
@@ -57,103 +66,131 @@ function editUser(user: UsersTableUser) {
     isEditSheetOpen.value = true;
 }
 
-watch(activeTab, showTabSkeleton, { immediate: true });
+watch(
+    () => props.initialTab,
+    (initialTab) => {
+        activeTab.value = initialTab;
 
-onBeforeUnmount(clearTabLoadingTimer);
+        if (initialTab === 'roles') {
+            showRolesSkeleton();
+        }
+    },
+    { immediate: true },
+);
+
+onBeforeUnmount(() => {
+    window.clearTimeout(loadingTimer);
+
+    if (rolesLoadingTimer !== null) {
+        window.clearTimeout(rolesLoadingTimer);
+    }
+});
 </script>
 
 <template>
-    <Head :title="t('Users')" />
+    <Head
+        :title="
+            initialTab === 'roles' ? t('Roles and permissions') : t('Users')
+        "
+    />
 
-    <div class="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden p-4">
-        <div class="flex shrink-0 flex-col gap-4">
-            <div class="flex items-center justify-between gap-4">
-                <h1 class="text-lg font-semibold">{{ t('Users') }}</h1>
-                <UserCreateSheet v-if="can.usersCreate" :roles="roles" />
+    <div
+        class="flex min-h-0 flex-1 flex-col overflow-hidden bg-white text-[#1d1d1f] dark:bg-[#111113] dark:text-white"
+    >
+        <header
+            class="flex shrink-0 items-center justify-between gap-4 px-4 py-5 sm:px-6 lg:px-8 lg:py-6"
+        >
+            <h1
+                class="text-[1.75rem] font-semibold tracking-[-0.04em] lg:text-[2rem]"
+            >
+                {{ t('Users') }}
+            </h1>
+            <template v-if="initialTab === 'users'">
+                <UserCreateSheet
+                    v-if="can.usersCreate"
+                    :roles="assignableRoles"
+                />
                 <UserEditSheet
                     v-if="can.usersUpdate"
                     v-model:open="isEditSheetOpen"
                     :user="editingUser"
-                    :roles="roles"
+                    :roles="assignableRoles"
                 />
-            </div>
+            </template>
+        </header>
 
+        <div
+            class="shrink-0 border-y border-black/8 px-4 py-3 sm:px-6 lg:px-8 dark:border-white/10"
+        >
             <div
-                class="relative grid h-10 w-full max-w-md grid-cols-2 rounded-lg bg-muted p-1"
+                class="grid h-10 w-full max-w-md gap-0.5 rounded-[10px] bg-black/[0.055] p-0.5 dark:bg-white/[0.08]"
+                :class="
+                    can.usersView && can.rolesView
+                        ? 'grid-cols-2'
+                        : 'grid-cols-1'
+                "
                 role="tablist"
-                aria-label="Users tabs"
+                :aria-label="t('Users')"
             >
-                <span
-                    class="pointer-events-none absolute inset-y-1 left-1 w-[calc(50%-0.25rem)] rounded-md bg-[var(--color-tab)] shadow-sm transition-transform duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)]"
-                    :class="
-                        activeTab === 'system'
-                            ? 'translate-x-full'
-                            : 'translate-x-0'
-                    "
-                />
-
-                <button
-                    type="button"
+                <Link
+                    v-if="can.usersView"
+                    :href="usersIndex()"
+                    preserve-state
                     role="tab"
-                    :aria-selected="activeTab === 'regular'"
-                    class="relative z-10 inline-flex items-center justify-center rounded-md px-3 text-sm font-medium transition-colors duration-200"
+                    :aria-selected="activeTab === 'users'"
+                    class="inline-flex items-center justify-center rounded-lg px-3.5 text-[13px] font-medium transition-[color,background-color,box-shadow] duration-150"
                     :class="
-                        activeTab === 'regular'
-                            ? 'text-white'
-                            : 'text-muted-foreground'
+                        activeTab === 'users'
+                            ? 'bg-white text-[#1d1d1f] shadow-[0_1px_3px_rgba(0,0,0,0.12)] dark:bg-white/15 dark:text-white dark:shadow-none'
+                            : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white'
                     "
-                    @click="activeTab = 'regular'"
+                    @click="activeTab = 'users'"
                 >
-                    {{ t('Regular users') }}
-                </button>
-
-                <button
-                    type="button"
+                    {{ t('Users') }}
+                </Link>
+                <Link
+                    v-if="can.rolesView"
+                    :href="rolesIndex()"
+                    preserve-state
                     role="tab"
-                    :aria-selected="activeTab === 'system'"
-                    class="relative z-10 inline-flex items-center justify-center rounded-md px-3 text-sm font-medium transition-colors duration-200"
+                    :aria-selected="activeTab === 'roles'"
+                    class="inline-flex items-center justify-center rounded-lg px-3.5 text-[13px] font-medium transition-[color,background-color,box-shadow] duration-150"
                     :class="
-                        activeTab === 'system'
-                            ? 'text-white'
-                            : 'text-muted-foreground'
+                        activeTab === 'roles'
+                            ? 'bg-white text-[#1d1d1f] shadow-[0_1px_3px_rgba(0,0,0,0.12)] dark:bg-white/15 dark:text-white dark:shadow-none'
+                            : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white'
                     "
-                    @click="activeTab = 'system'"
+                    @click="activeTab = 'roles'"
                 >
-                    {{ t('System users') }}
-                </button>
+                    {{ t('Roles and permissions') }}
+                </Link>
             </div>
         </div>
 
-        <div class="flex min-h-0 flex-1 flex-col overflow-hidden">
-            <div v-if="activeTab === 'regular'" class="min-h-0 flex-1 overflow-hidden">
-                <div class="flex h-full min-h-0 flex-1 pr-1">
-                    <UsersTable
-                        scroll-data="regularUsers"
-                        :users="regularUsers.data"
-                        :empty-label="t('No regular users found')"
-                        :can-edit="can.usersUpdate"
-                        :can-toggle-status="can.usersUpdate"
-                        :can-delete="can.usersDelete"
-                        :loading="isTabLoading"
-                        @edit="editUser"
-                    />
-                </div>
-            </div>
+        <div v-if="initialTab === 'users'" class="flex min-h-0 flex-1">
+            <UsersTable
+                scroll-data="users"
+                :users="users.data"
+                :empty-label="t('No users found')"
+                :can-edit="can.usersUpdate"
+                :can-toggle-status="can.usersUpdate"
+                :can-delete="can.usersDelete"
+                :loading="isTableLoading"
+                @edit="editUser"
+            />
+        </div>
 
-            <div v-else class="min-h-0 flex-1 overflow-hidden">
-                <div class="flex h-full min-h-0 flex-1 pr-1">
-                    <UsersTable
-                        scroll-data="systemUsers"
-                        :users="systemUsers.data"
-                        :empty-label="t('No system users found')"
-                        :can-edit="can.usersUpdate"
-                        :can-toggle-status="can.usersUpdate"
-                        :can-delete="can.usersDelete"
-                        :loading="isTabLoading"
-                        @edit="editUser"
-                    />
-                </div>
-            </div>
+        <div
+            v-else
+            class="min-h-0 flex-1 overflow-auto px-4 py-5 sm:px-6 lg:px-8"
+            :aria-busy="isRolesLoading"
+        >
+            <RolesPermissionsSkeleton v-if="isRolesLoading" />
+            <RolesPermissionsPanel
+                v-else
+                :roles="roleCatalog"
+                :permissions="permissions"
+            />
         </div>
     </div>
 </template>

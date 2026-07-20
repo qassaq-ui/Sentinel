@@ -12,9 +12,20 @@ class LocalizationManager
 {
     private const Directory = 'localizations';
 
+    private const DisabledFile = 'localizations/disabled.json';
+
     private const LabelsFile = 'localizations/labels.json';
 
     public function availableLocales(): array
+    {
+        return collect($this->configuredLocales())
+            ->filter(fn (array $locale): bool => $locale['enabled'])
+            ->map(fn (array $locale): array => Arr::only($locale, ['code', 'label', 'uploaded']))
+            ->values()
+            ->all();
+    }
+
+    public function configuredLocales(): array
     {
         $locales = collect(config('localization.locales', []))
             ->map(fn (string $label, string $locale): array => [
@@ -31,7 +42,18 @@ class LocalizationManager
             ]);
         }
 
-        return $locales->sortKeys()->values()->all();
+        $disabledLocales = $this->disabledLocaleCodes();
+        $fallbackLocale = config('app.fallback_locale');
+
+        return $locales
+            ->sortKeys()
+            ->map(fn (array $locale): array => [
+                ...$locale,
+                'enabled' => ! in_array($locale['code'], $disabledLocales, true),
+                'fallback' => $locale['code'] === $fallbackLocale,
+            ])
+            ->values()
+            ->all();
     }
 
     public function hasLocale(string $locale): bool
@@ -74,6 +96,29 @@ class LocalizationManager
             self::LabelsFile,
             json_encode($labels, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR),
         );
+
+        $this->enableLocale($locale);
+    }
+
+    public function enableLocale(string $locale): void
+    {
+        $disabledLocales = collect($this->disabledLocaleCodes())
+            ->reject(fn (string $disabledLocale): bool => $disabledLocale === $locale)
+            ->values()
+            ->all();
+
+        $this->storeDisabledLocaleCodes($disabledLocales);
+    }
+
+    public function disableLocale(string $locale): void
+    {
+        $disabledLocales = collect($this->disabledLocaleCodes())
+            ->push($locale)
+            ->unique()
+            ->values()
+            ->all();
+
+        $this->storeDisabledLocaleCodes($disabledLocales);
     }
 
     private function baseMessages(string $locale): array
@@ -105,10 +150,35 @@ class LocalizationManager
     private function uploadedLocaleCodes(): array
     {
         return collect($this->disk()->files(self::Directory))
-            ->filter(fn (string $path): bool => Str::endsWith($path, '.json') && $path !== self::LabelsFile)
+            ->filter(fn (string $path): bool => Str::endsWith($path, '.json') && ! in_array($path, [
+                self::DisabledFile,
+                self::LabelsFile,
+            ], true))
             ->map(fn (string $path): string => Str::beforeLast(basename($path), '.json'))
             ->values()
             ->all();
+    }
+
+    private function disabledLocaleCodes(): array
+    {
+        if (! $this->disk()->exists(self::DisabledFile)) {
+            return [];
+        }
+
+        $locales = json_decode($this->disk()->get(self::DisabledFile) ?: '[]', true, 512, JSON_THROW_ON_ERROR);
+
+        return is_array($locales) ? array_values(array_filter($locales, 'is_string')) : [];
+    }
+
+    /**
+     * @param  array<int, string>  $locales
+     */
+    private function storeDisabledLocaleCodes(array $locales): void
+    {
+        $this->disk()->put(
+            self::DisabledFile,
+            json_encode(array_values($locales), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR),
+        );
     }
 
     private function labels(): array

@@ -1,31 +1,26 @@
 <?php
 
+use App\Http\Controllers\Settings\GeneralSettingsController;
+use App\Http\Controllers\Settings\InquirySettingsController;
+use App\Http\Controllers\Settings\LocalizationController;
 use App\Http\Controllers\Settings\ProfileController;
-use App\Http\Controllers\Settings\RolesPermissionsController;
 use App\Http\Controllers\Settings\SecurityController;
 use Illuminate\Auth\Middleware\RequirePassword;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth'])->group(function () {
-    Route::inertia('settings', 'settings/Index')
+    Route::get('settings', [GeneralSettingsController::class, 'edit'])
         ->middleware('permission:settings.access')
         ->name('settings.index');
-    Route::get('settings/roles-permissions', [RolesPermissionsController::class, 'edit'])
-        ->middleware(['permission:settings.access', 'permission:roles.view'])
-        ->name('roles-permissions.index');
-    Route::post('settings/roles-permissions', [RolesPermissionsController::class, 'store'])
-        ->middleware('permission:roles.create')
-        ->name('roles-permissions.store');
-    Route::patch('settings/roles-permissions/{role}', [RolesPermissionsController::class, 'update'])
-        ->middleware('permission:roles.update')
-        ->name('roles-permissions.update');
-    Route::delete('settings/roles-permissions/{role}', [RolesPermissionsController::class, 'destroy'])
-        ->middleware('permission:roles.delete')
-        ->name('roles-permissions.destroy');
-    Route::patch('settings/roles-permissions/{role}/permissions', [RolesPermissionsController::class, 'updatePermission'])
-        ->middleware('permission:roles.permissions.update')
-        ->name('roles-permissions.permissions.update');
-
+    Route::post('settings/localization', [LocalizationController::class, 'store'])
+        ->middleware('permission:settings.access')
+        ->name('settings.localization.store');
+    Route::patch('settings/localization/{locale}', [LocalizationController::class, 'update'])
+        ->middleware('permission:settings.access')
+        ->name('settings.localization.update');
+    Route::patch('settings/inquiries', [InquirySettingsController::class, 'update'])
+        ->middleware('permission:settings.access')
+        ->name('settings.inquiries.update');
     Route::get('settings/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('settings/profile', [ProfileController::class, 'update'])->name('profile.update');
 });

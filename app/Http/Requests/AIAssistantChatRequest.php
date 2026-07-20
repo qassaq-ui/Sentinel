@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Inquiry;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -13,7 +14,21 @@ class AIAssistantChatRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return $this->user() !== null;
+        $user = $this->user();
+
+        if ($user === null) {
+            return false;
+        }
+
+        if (blank($this->input('inquiry_number'))) {
+            return true;
+        }
+
+        $inquiry = Inquiry::query()
+            ->where('number', $this->string('inquiry_number')->toString())
+            ->first();
+
+        return $inquiry !== null && $user->can('view', $inquiry);
     }
 
     /**

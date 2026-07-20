@@ -1,10 +1,10 @@
 <script setup lang="ts">
+import { usePage } from '@inertiajs/vue3';
+import { CalendarDays, ChevronLeft, ChevronRight, X } from '@lucide/vue';
+import { computed, ref, watch } from 'vue';
 import { Button } from '@/components/ui/button';
 import { useTranslations } from '@/composables/useTranslations';
 import { cn } from '@/lib/utils';
-import { CalendarDays, ChevronLeft, ChevronRight, X } from '@lucide/vue';
-import { usePage } from '@inertiajs/vue3';
-import { computed, ref, watch } from 'vue';
 
 type Props = {
     label: string;
@@ -20,7 +20,9 @@ const emit = defineEmits<{
 const { t } = useTranslations();
 const page = usePage();
 const isOpen = ref(false);
-const visibleMonth = ref(monthStart(props.modelValue ? parseIsoDate(props.modelValue) : new Date()));
+const visibleMonth = ref(
+    monthStart(props.modelValue ? parseIsoDate(props.modelValue) : new Date()),
+);
 
 const locale = computed(() => String(page.props.locale.current ?? 'ru'));
 
@@ -140,15 +142,19 @@ function clearDate() {
 
 <template>
     <div class="relative grid gap-2">
-        <span class="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+        <span
+            class="px-0.5 text-[11px] font-semibold tracking-[0.04em] text-slate-500 uppercase dark:text-slate-400"
+        >
             {{ label }}
         </span>
 
         <Button
             type="button"
             variant="outline"
-            class="h-9 justify-start gap-2 rounded-md bg-background px-3 text-left text-sm font-normal shadow-none"
-            :class="modelValue === '' ? 'text-muted-foreground' : 'text-foreground'"
+            class="h-10 justify-start gap-2 rounded-[10px] border-black/10 bg-white px-3 text-left text-sm font-normal shadow-none hover:bg-white focus-visible:ring-2 focus-visible:ring-[#007aff]/15 dark:border-white/10 dark:bg-white/[0.07] dark:hover:bg-white/10"
+            :class="
+                modelValue === '' ? 'text-muted-foreground' : 'text-foreground'
+            "
             :aria-expanded="isOpen"
             @click="isOpen = !isOpen"
         >
@@ -168,7 +174,7 @@ function clearDate() {
         >
             <div
                 v-if="isOpen"
-                class="absolute top-[4.25rem] left-0 z-30 w-72 rounded-lg border border-border bg-popover p-3 text-popover-foreground shadow-lg"
+                class="absolute top-[4.5rem] left-0 z-30 w-72 rounded-2xl border border-black/8 bg-white p-3 text-slate-950 shadow-[0_18px_50px_rgba(0,0,0,0.16)] dark:border-white/10 dark:bg-[#242426] dark:text-white"
             >
                 <div class="mb-3 flex items-center justify-between gap-2">
                     <Button
@@ -209,7 +215,7 @@ function clearDate() {
                         v-for="day in calendarDays"
                         :key="day.iso"
                         type="button"
-                        class="flex aspect-square items-center justify-center rounded-md text-sm transition-colors"
+                        class="flex aspect-square items-center justify-center rounded-lg text-sm transition-colors"
                         :class="
                             cn(
                                 day.inMonth
@@ -219,8 +225,8 @@ function clearDate() {
                                     !day.selected &&
                                     'border border-[var(--color-tab)]/40',
                                 day.selected
-                                    ? 'bg-[var(--color-tab)] text-white hover:bg-[var(--color-tab)]'
-                                    : 'hover:bg-muted',
+                                    ? 'bg-[#007aff] text-white hover:bg-[#007aff]'
+                                    : 'hover:bg-black/5 dark:hover:bg-white/10',
                             )
                         "
                         @click="selectDate(day.iso)"

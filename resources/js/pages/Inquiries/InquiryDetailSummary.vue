@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { useTranslations } from '@/composables/useTranslations';
 import {
     CalendarDays,
     CircleUserRound,
@@ -10,6 +9,7 @@ import {
     Radio,
     UserCog,
 } from '@lucide/vue';
+import { useTranslations } from '@/composables/useTranslations';
 import InquiryAssigneeDialog from './InquiryAssigneeDialog.vue';
 import InquiryCategoryAssignmentDialog from './InquiryCategoryAssignmentDialog.vue';
 import InquiryDetailMetaItem from './InquiryDetailMetaItem.vue';
@@ -22,6 +22,7 @@ type Props = {
     categories: InquiryCategory[];
     systemUsers: InquiryAssigneeOption[];
     canAssign: boolean;
+    canAssignExecutor: boolean;
 };
 
 defineProps<Props>();
@@ -34,21 +35,22 @@ function empty(value: string | null) {
 </script>
 
 <template>
-    <section class="rounded-lg bg-muted/60 px-4 py-3">
-        <h1 class="text-base font-semibold leading-tight">
-            № {{ inquiry.number }}: {{ inquiry.subject }}
-        </h1>
-
-        <div class="mt-4 grid gap-x-7 gap-y-4 md:grid-cols-2 xl:grid-cols-4">
+    <section
+        class="border-y border-black/8 bg-[#f7f7f8] px-4 py-4 dark:border-white/10 dark:bg-[#1a1a1c]"
+    >
+        <div class="grid gap-x-7 gap-y-4 md:grid-cols-2 xl:grid-cols-4">
             <div class="space-y-4">
                 <div>
                     <div
-                        class="mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-muted-foreground"
+                        class="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground"
                     >
                         <Radio class="size-3.5" />
                         <span>{{ t('Status') }}</span>
                     </div>
-                    <InquiryStatusBadge :status="inquiry.status" />
+                    <InquiryStatusBadge
+                        :status="inquiry.status"
+                        appearance="text"
+                    />
                 </div>
 
                 <InquiryDetailMetaItem
@@ -73,7 +75,9 @@ function empty(value: string | null) {
                         <span>{{ t('Category') }}</span>
                     </div>
                     <div class="mt-1 flex min-w-0 items-center gap-1.5">
-                        <div class="truncate text-sm font-semibold text-foreground">
+                        <div
+                            class="truncate text-sm font-semibold text-foreground"
+                        >
                             {{ inquiry.categoryName }}
                         </div>
                         <InquiryCategoryAssignmentDialog
@@ -114,19 +118,18 @@ function empty(value: string | null) {
                         <UserCog class="size-3.5" />
                         <span>{{ t('Executor') }}</span>
                     </div>
-                    <div
-                        v-if="inquiry.assignee"
-                        class="mt-1 min-w-0"
-                    >
+                    <div v-if="inquiry.assignee" class="mt-1 min-w-0">
                         <div class="flex min-w-0 items-center gap-1.5">
-                            <div class="truncate text-sm font-semibold text-foreground">
+                            <div
+                                class="truncate text-sm font-semibold text-foreground"
+                            >
                                 {{ inquiry.assignee.name }}
                             </div>
                             <InquiryAssigneeDialog
                                 :inquiry-number="inquiry.number"
                                 :assignee="inquiry.assignee"
                                 :system-users="systemUsers"
-                                :can-assign="canAssign"
+                                :can-assign="canAssignExecutor"
                             />
                         </div>
                         <div
@@ -141,10 +144,10 @@ function empty(value: string | null) {
                             :inquiry-number="inquiry.number"
                             :assignee="inquiry.assignee"
                             :system-users="systemUsers"
-                            :can-assign="canAssign"
+                            :can-assign="canAssignExecutor"
                         />
                         <span
-                            v-if="!canAssign"
+                            v-if="!canAssignExecutor"
                             class="text-sm font-semibold text-foreground"
                         >
                             {{ t('Not assigned') }}
